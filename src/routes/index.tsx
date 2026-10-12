@@ -22,6 +22,10 @@ function Index() {
 
   // Fetch all assigned milestones for Demo Student (user_id = 1)
   const fetchMilestones = async () => {
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
     const { data, error } = await supabase
       .from('USER_MILESTONE')
       .select(`
@@ -62,6 +66,7 @@ function Index() {
       )
     );
 
+    if (!supabase) return;
     const { error } = await supabase
       .from('USER_MILESTONE')
       .update({
@@ -95,7 +100,11 @@ function Index() {
             </div>
           </div>
 
-          {loading ? (
+          {!supabase ? (
+            <p className="text-xs text-gray-500 py-3">
+              Database not connected. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to load checkpoints.
+            </p>
+          ) : loading ? (
             <p className="text-xs text-gray-400 py-3">Connecting to Supabase...</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3">
