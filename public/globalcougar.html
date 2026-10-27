@@ -29,7 +29,7 @@
         <span class="grid h-10 w-10 shrink-0 place-items-center rounded bg-byu-navy text-sm font-black text-white">GC</span>
         <span class="min-w-0"><strong class="block truncate text-base text-byu-navy">GlobalCougar</strong><span class="hidden truncate text-xs text-slate-500 sm:block">BYU International Student Hub</span></span>
       </button>
-      <div class="ml-auto flex items-center gap-2">
+      <div id="navControls" class="ml-auto hidden items-center gap-2">
         <label for="screenSwitcher" class="sr-only">Switch screen</label>
         <select id="screenSwitcher" class="max-w-40 rounded border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-byu-navy sm:max-w-none">
           <option value="1">1 · Welcome</option><option value="2">2 · Home Hub</option><option value="3">3 · To-Do Journey</option><option value="4">4 · Updates</option><option value="5">5 · Community</option><option value="6">6 · AI Assistant</option><option value="7">7 · BYU ISSS</option><option value="8">8 · Career Help</option>
@@ -134,7 +134,7 @@
       s.onchange=()=>{if(s.value){plan.start=s.value;applyPlan();renderRoadmap();}};a.onchange=()=>{if(a.value){plan.arrive=a.value;applyPlan();renderRoadmap();}};applyPlan();}
     const initialChat=[['bot','Hi James! How can I help you navigate life at BYU today?'],['user','What is on my agenda this week?'],['bot','Here is your schedule: You have your TB screening appointment tomorrow at 10:00 AM at the Student Health Center, followed by ISSS Document Check-In at 2:00 PM.'],['user',"I need to setup my bank account. Also where is my counselor's room?"],['bot',"To set up your bank account, bring your Passport, Form I-20, BYU ID, and proof of Provo address to Chase or Wells Fargo on Cougar Blvd (no SSN required for basic checking). Your international advisor's office is located in JNRB 4561."]];
 
-    function showScreen(n){state.screen=Number(n);document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('screen-'+state.screen).classList.add('active');document.getElementById('screenSwitcher').value=state.screen;window.scrollTo({top:0,behavior:'smooth'});if(state.screen===2)renderDashboard();if(state.screen===3){applyPlan();renderRoadmap();}}
+    function showScreen(n){state.screen=Number(n);document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('screen-'+state.screen).classList.add('active');document.getElementById('screenSwitcher').value=state.screen;const nc=document.getElementById('navControls');nc.classList.toggle('hidden',state.screen===1);nc.classList.toggle('flex',state.screen!==1);window.scrollTo({top:0,behavior:'smooth'});if(state.screen===2)renderDashboard();if(state.screen===3){applyPlan();renderRoadmap();}}
     function toast(text){const el=document.createElement('div');el.className='toast whitespace-nowrap rounded-md bg-slate-900 px-4 py-3 text-sm font-bold text-white shadow-xl';el.textContent=text;document.getElementById('toastHost').append(el);setTimeout(()=>el.remove(),2800)}
     document.addEventListener('click',e=>{const target=e.target.closest('[data-screen]');if(target)showScreen(target.dataset.screen);if(e.target.closest('[data-home]'))showScreen(2)});document.getElementById('screenSwitcher').addEventListener('change',e=>showScreen(e.target.value));document.getElementById('aiFab').onclick=()=>showScreen(6);
 
