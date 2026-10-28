@@ -30,7 +30,8 @@ export const Route = createFileRoute('/api/public/byu-news')({
           if (!res.ok) throw new Error(`BYU feed ${res.status}`);
           const xml = await res.text();
           const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, 12).map((m) => {
-            const get = (tag: string) => decode(m[1].match(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`))?.[1] ?? '');
+            const body = m[1] ?? '';
+            const get = (tag: string) => decode(body.match(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`))?.[1] ?? '');
             const title = get('title');
             const description = get('description');
             return {
