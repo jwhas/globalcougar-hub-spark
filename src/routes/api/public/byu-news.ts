@@ -47,7 +47,7 @@ export const Route = createFileRoute('/api/public/byu-news')({
             { headers: { 'Cache-Control': 'public, max-age=900' } },
           );
         } catch (e) {
-          return Response.json({ error: (e as Error).message, items: [] }, { status: 502 });
+          return Response.json({ error: (e as Error).message, items: [] });
         }
       },
     },
