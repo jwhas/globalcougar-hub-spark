@@ -24,7 +24,9 @@
     .roadmap-progress-path{transition:stroke-dashoffset 1.1s cubic-bezier(.22,1,.36,1)}
     .roadmap-mobile-progress{transition:height 1.1s cubic-bezier(.22,1,.36,1)}
     .confetti-piece{position:absolute;top:-1.5rem;width:10px;height:16px;opacity:0;animation:confettiFall 3.2s cubic-bezier(.15,.65,.3,1) forwards}
-    .arrival-date-input{box-sizing:border-box;width:100%;min-width:0;max-width:100%;font-size:16px;text-align:left}
+    .arrival-date-input{appearance:none;-webkit-appearance:none;display:block;box-sizing:border-box;width:100%;min-width:0;max-width:100%;font:inherit;font-size:16px;text-align:left}
+    .arrival-date-input::-webkit-date-and-time-value{min-width:0;width:100%;text-align:left}
+    .arrival-date-input::-webkit-calendar-picker-indicator{flex:0 0 auto;margin:0 0 0 .25rem}
     @keyframes confettiFall{0%{opacity:1}100%{opacity:0;transform:translate3d(var(--drift),110vh,0) rotate(var(--spin))}}
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
   </style>
