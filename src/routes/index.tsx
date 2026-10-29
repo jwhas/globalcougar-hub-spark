@@ -86,16 +86,16 @@ function Index() {
   return (
     <div className="flex flex-col h-screen w-full bg-slate-100">
       {/* Dynamic Supabase Checkpoints Bar */}
-      <section className="bg-white border-b border-gray-200 px-6 py-4 shadow-sm z-10">
+      <section className="bg-white border-b border-gray-200 px-3 py-2 shadow-sm z-10 sm:px-6 sm:py-4">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-            <div>
-              <h1 className="text-base font-bold text-gray-900">
+          <div className="flex items-center justify-between gap-2 pb-2 border-b border-gray-100 sm:pb-3">
+            <div className="min-w-0">
+              <h1 className="text-sm font-bold text-gray-900 sm:text-base">
                 Assigned Onboarding Checkpoints
               </h1>
-              <p className="text-xs text-gray-500">Live PostgreSQL Backend (USER_MILESTONE)</p>
+              <p className="text-[10px] text-gray-500 sm:text-xs">Live PostgreSQL Backend (USER_MILESTONE)</p>
             </div>
-            <div className="text-xs font-semibold px-2.5 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200">
+            <div className="shrink-0 whitespace-nowrap text-[10px] font-semibold px-2 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200 sm:px-2.5 sm:text-xs">
               Completed: {completedCount} / {milestones.length}
             </div>
           </div>
@@ -107,24 +107,24 @@ function Index() {
           ) : loading ? (
             <p className="text-xs text-gray-400 py-3">Connecting to Supabase...</p>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 pt-2 sm:pt-3 max-h-36 overflow-y-auto sm:max-h-none">
               {milestones.map((item: any) => (
                 <div
                   key={item.id}
-                  className="p-3 bg-slate-50 border border-gray-200 rounded-lg flex items-center justify-between"
+                  className="min-w-0 gap-2 p-2 bg-slate-50 border border-gray-200 rounded-lg flex items-center justify-between sm:p-3"
                 >
-                  <div className="pr-3">
-                    <p className="text-xs font-bold text-gray-900">
+                  <div className="min-w-0 flex-1 pr-1 sm:pr-3">
+                    <p className="text-[11px] font-bold text-gray-900 sm:text-xs">
                       {item.MILESTONE?.title ?? `Milestone #${item.milestone_id}`}
                     </p>
-                    <p className="text-[11px] text-gray-500">
+                    <p className="line-clamp-2 break-words text-[10px] leading-tight text-gray-500 sm:text-[11px]">
                       {item.MILESTONE?.office_location ?? 'Campus Office'} • Required Docs:{' '}
                       <span className="text-gray-700">{item.MILESTONE?.required_documents ?? 'None'}</span>
                     </p>
                   </div>
                   <button
                     onClick={() => toggleMilestone(item.id, item.status)}
-                    className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors shrink-0 ${
+                    className={`max-w-28 whitespace-nowrap px-2 py-1 rounded text-[10px] font-semibold transition-colors shrink-0 sm:max-w-none sm:px-3 sm:py-1.5 sm:text-xs ${
                       item.status === 'completed'
                         ? 'bg-emerald-600 text-white hover:bg-emerald-700'
                         : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100'
@@ -142,8 +142,8 @@ function Index() {
       {/* Embedded Prototype Frame */}
       <iframe
         title="GlobalCougar prototype"
-        src="/globalcougar.html?v=5"
-        className="flex-1 w-full border-0"
+        src="/globalcougar.html?v=6"
+        className="min-h-0 min-w-0 flex-1 w-full border-0"
       />
     </div>
   );
