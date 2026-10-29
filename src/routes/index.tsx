@@ -142,7 +142,7 @@ function Index() {
       {/* Embedded Prototype Frame */}
       <iframe
         title="GlobalCougar prototype"
-        src="/globalcougar.html?v=3"
+        src="/globalcougar.html?v=4"
         className="flex-1 w-full border-0"
       />
     </div>
