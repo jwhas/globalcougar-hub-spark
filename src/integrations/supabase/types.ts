@@ -14,7 +14,188 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      forum_reply: {
+        Row: {
+          body: string
+          created_at: string
+          id: number
+          student_id: number
+          thread_id: number
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: never
+          student_id: number
+          thread_id: number
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: never
+          student_id?: number
+          thread_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_reply_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_reply_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "forum_thread"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_thread: {
+        Row: {
+          body: string
+          created_at: string
+          id: number
+          student_id: number
+          title: string
+          topic: string
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          id?: never
+          student_id: number
+          title: string
+          topic?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: never
+          student_id?: number
+          title?: string
+          topic?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_thread_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      milestone: {
+        Row: {
+          description: string
+          id: number
+          is_checkpoint: boolean
+          office_location: string
+          phase: number
+          required_documents: string
+          step_order: number
+          title: string
+        }
+        Insert: {
+          description?: string
+          id?: never
+          is_checkpoint?: boolean
+          office_location?: string
+          phase?: number
+          required_documents?: string
+          step_order?: number
+          title: string
+        }
+        Update: {
+          description?: string
+          id?: never
+          is_checkpoint?: boolean
+          office_location?: string
+          phase?: number
+          required_documents?: string
+          step_order?: number
+          title?: string
+        }
+        Relationships: []
+      }
+      student: {
+        Row: {
+          account_start_date: string | null
+          created_at: string
+          email: string
+          home_country: string
+          id: number
+          name: string
+          semester: string
+          situations: string
+          us_arrival_date: string | null
+        }
+        Insert: {
+          account_start_date?: string | null
+          created_at?: string
+          email?: string
+          home_country?: string
+          id?: never
+          name: string
+          semester?: string
+          situations?: string
+          us_arrival_date?: string | null
+        }
+        Update: {
+          account_start_date?: string | null
+          created_at?: string
+          email?: string
+          home_country?: string
+          id?: never
+          name?: string
+          semester?: string
+          situations?: string
+          us_arrival_date?: string | null
+        }
+        Relationships: []
+      }
+      user_milestone: {
+        Row: {
+          completed_date: string | null
+          id: number
+          milestone_id: number
+          status: string
+          student_id: number
+        }
+        Insert: {
+          completed_date?: string | null
+          id?: never
+          milestone_id: number
+          status?: string
+          student_id: number
+        }
+        Update: {
+          completed_date?: string | null
+          id?: never
+          milestone_id?: number
+          status?: string
+          student_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_milestone_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "milestone"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_milestone_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
