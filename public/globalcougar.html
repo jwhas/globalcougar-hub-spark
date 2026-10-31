@@ -68,8 +68,13 @@
             <button id="beginTab" class="account-tab flex-1 rounded bg-white px-4 py-2.5 text-sm font-bold text-byu-navy shadow-sm">Begin <span class="hidden sm:inline">(New User)</span></button>
           </div>
           <p class="text-xs font-bold uppercase tracking-[.18em] text-byu-royal">GlobalCougar</p><h2 class="mt-1 text-2xl font-black tracking-wide text-byu-navy">INTERNATIONAL STUDENT HUB</h2>
-          <label for="country" class="mt-7 block text-sm font-bold text-slate-700">Select Your Home Country</label>
-          <select id="country" class="mt-2 w-full rounded-md border border-slate-300 bg-white px-4 py-3 text-slate-800 focus:border-byu-royal"><option value="">Choose a country...</option><option>South Korea</option><option>Brazil</option><option>Canada</option><option>Nigeria</option><option>Japan</option><option>Germany</option><option>Mexico</option><option>India</option><option>China</option><option>Ghana</option></select>
+          <label for="countrySearch" class="mt-7 block text-sm font-bold text-slate-700">Select Your Home Country</label>
+          <div id="countryPicker" class="relative mt-2">
+            <input id="countrySearch" type="search" role="combobox" aria-autocomplete="list" aria-controls="countryOptions" aria-expanded="false" aria-describedby="countrySearchStatus" autocomplete="off" placeholder="Search countries..." class="w-full rounded-md border border-slate-300 bg-white px-4 py-3 text-slate-800 focus:border-byu-royal" />
+            <input id="country" type="hidden" value="" />
+            <div id="countryOptions" role="listbox" class="absolute z-20 mt-1 hidden max-h-60 w-full overflow-y-auto rounded-md border border-slate-200 bg-white py-1 shadow-lg"></div>
+            <p id="countrySearchStatus" class="sr-only" aria-live="polite"></p>
+          </div>
           <fieldset id="situationField" class="mt-7"><legend class="text-sm font-bold text-slate-700">What describes your situation? <span class="font-normal text-slate-500">(Select at least one)</span></legend><div id="situationChips" class="mt-3 flex flex-wrap gap-2"></div><p id="situationHint" class="mt-2 text-xs font-semibold text-slate-400">Pick one or more bubbles so we can tailor your roadmap.</p></fieldset>
           <button id="continueBtn" class="mt-8 flex w-full items-center justify-center gap-2 rounded-md bg-byu-royal px-5 py-3.5 font-bold text-white shadow-md transition hover:bg-byu-navy">Continue to Hub <span aria-hidden="true">→</span></button>
           <p id="onboardingNote" class="mt-3 min-h-5 text-center text-sm text-rose-700" aria-live="polite"></p>
@@ -108,6 +113,33 @@
 
   <script>
     const state={screen:1,country:'',situations:new Set(),situationError:false,completed:new Set([0,1,2]),activeNode:3,updateFilter:'All',slang:0,revealed:false,career:'scholarships'};
+    const countries=[
+      'Afghanistan','Åland Islands','Albania','Algeria','American Samoa','Andorra','Angola','Anguilla','Antarctica','Antigua & Barbuda','Argentina','Armenia','Aruba','Australia','Austria','Azerbaijan',
+      'Bahamas','Bahrain','Bangladesh','Barbados','Belarus','Belgium','Belize','Benin','Bermuda','Bhutan','Bolivia','Bosnia & Herzegovina','Botswana','Bouvet Island','Brazil','British Indian Ocean Territory','British Virgin Islands','Brunei','Bulgaria','Burkina Faso','Burundi',
+      'Cambodia','Cameroon','Canada','Cape Verde','Caribbean Netherlands','Cayman Islands','Central African Republic','Chad','Chile','China','Christmas Island','Cocos (Keeling) Islands','Colombia','Comoros','Congo - Brazzaville','Congo - Kinshasa','Cook Islands','Costa Rica','Côte d’Ivoire','Croatia','Cuba','Curaçao','Cyprus','Czechia',
+      'Denmark','Djibouti','Dominica','Dominican Republic',
+      'Ecuador','Egypt','El Salvador','Equatorial Guinea','Eritrea','Estonia','Eswatini','Ethiopia',
+      'Falkland Islands','Faroe Islands','Fiji','Finland','France','French Guiana','French Polynesia','French Southern Territories',
+      'Gabon','Gambia','Georgia','Germany','Ghana','Gibraltar','Greece','Greenland','Grenada','Guadeloupe','Guam','Guatemala','Guernsey','Guinea','Guinea-Bissau','Guyana',
+      'Haiti','Heard & McDonald Islands','Honduras','Hong Kong SAR China','Hungary',
+      'Iceland','India','Indonesia','Iran','Iraq','Ireland','Isle of Man','Israel','Italy',
+      'Jamaica','Japan','Jersey','Jordan',
+      'Kazakhstan','Kenya','Kiribati','Kosovo','Kuwait','Kyrgyzstan',
+      'Laos','Latvia','Lebanon','Lesotho','Liberia','Libya','Liechtenstein','Lithuania','Luxembourg',
+      'Macao SAR China','Madagascar','Malawi','Malaysia','Maldives','Mali','Malta','Marshall Islands','Martinique','Mauritania','Mauritius','Mayotte','Mexico','Micronesia','Moldova','Monaco','Mongolia','Montenegro','Montserrat','Morocco','Mozambique','Myanmar (Burma)',
+      'Namibia','Nauru','Nepal','Netherlands','New Caledonia','New Zealand','Nicaragua','Niger','Nigeria','Niue','Norfolk Island','North Korea','North Macedonia','Northern Mariana Islands','Norway',
+      'Oman',
+      'Pakistan','Palau','Palestinian Territories','Panama','Papua New Guinea','Paraguay','Peru','Philippines','Pitcairn Islands','Poland','Portugal','Puerto Rico',
+      'Qatar',
+      'Réunion','Romania','Russia','Rwanda',
+      'Samoa','San Marino','São Tomé & Príncipe','Saudi Arabia','Senegal','Serbia','Seychelles','Sierra Leone','Singapore','Sint Maarten','Slovakia','Slovenia','Solomon Islands','Somalia','South Africa','South Georgia & South Sandwich Islands','South Korea','South Sudan','Spain','Sri Lanka','St. Barthélemy','St. Helena','St. Kitts & Nevis','St. Lucia','St. Martin','St. Pierre & Miquelon','St. Vincent & Grenadines','Sudan','Suriname','Svalbard & Jan Mayen','Sweden','Switzerland','Syria',
+      'Taiwan','Tajikistan','Tanzania','Thailand','Timor-Leste','Togo','Tokelau','Tonga','Trinidad & Tobago','Tunisia','Turkey','Turkmenistan','Turks & Caicos Islands','Tuvalu',
+      'U.S. Outlying Islands','U.S. Virgin Islands','Uganda','Ukraine','United Arab Emirates','United Kingdom','United States','Uruguay','Uzbekistan',
+      'Vanuatu','Vatican City','Venezuela','Vietnam',
+      'Wallis & Futuna','Western Sahara',
+      'Yemen',
+      'Zambia','Zimbabwe'
+    ];
     const situations=['Undergraduate F-1','Transfer Student','Living On-Campus','First Time in USA','Married / Family','Seeking On-Campus Job'];
     const features=[['✓','Check List / To-Do Journey','Your personalized arrival roadmap',3],['⚖','Updates & Legal News','Visa alerts, deadlines, and campus news',4],['◎','Community & Slang','Connect, belong, and learn BYU culture',5],['GC','AI Assistant','Ask questions about life at BYU',6],['Y','BYU ISSS Office','Advisors, contacts, and official forms',7],['↗','Career Help & Aid','Jobs, scholarships, and career coaching',8]];
     const milestones=[
@@ -151,7 +183,36 @@
     function toast(text){const el=document.createElement('div');el.className='toast whitespace-nowrap rounded-md bg-slate-900 px-4 py-3 text-sm font-bold text-white shadow-xl';el.textContent=text;document.getElementById('toastHost').append(el);setTimeout(()=>el.remove(),2800)}
     document.addEventListener('click',e=>{const target=e.target.closest('[data-screen]');if(target)showScreen(target.dataset.screen);if(e.target.closest('[data-home]'))showScreen(2)});document.getElementById('screenSwitcher').addEventListener('change',e=>showScreen(e.target.value));document.getElementById('aiFab').onclick=()=>showScreen(6);
 
+    function initCountryPicker(){
+      const wrapper=document.getElementById('countryPicker'),input=document.getElementById('countrySearch'),value=document.getElementById('country'),list=document.getElementById('countryOptions'),status=document.getElementById('countrySearchStatus');
+      let matches=[],activeIndex=-1;
+      const normalize=text=>text.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+      function close(){list.classList.add('hidden');input.setAttribute('aria-expanded','false');input.removeAttribute('aria-activedescendant');activeIndex=-1;}
+      function render(){
+        const query=normalize(input.value);
+        matches=[...countries].sort((a,b)=>a.localeCompare(b,'en')).filter(name=>normalize(name).includes(query));
+        activeIndex=matches.length?0:-1;
+        list.replaceChildren();
+        if(!matches.length){const empty=document.createElement('p');empty.className='px-4 py-3 text-sm text-slate-500';empty.textContent='No countries found.';list.append(empty);}
+        else matches.forEach((name,index)=>{const option=document.createElement('div');option.id='country-option-'+index;option.setAttribute('role','option');option.setAttribute('aria-selected',index===activeIndex?'true':'false');option.dataset.countryOption=name;option.className='cursor-pointer px-4 py-2 text-sm text-slate-700 hover:bg-byu-sky aria-selected:bg-byu-sky';option.textContent=name;option.addEventListener('pointerdown',event=>event.preventDefault());option.addEventListener('click',()=>select(name));list.append(option);});
+        list.classList.remove('hidden');input.setAttribute('aria-expanded','true');
+        if(activeIndex>=0)input.setAttribute('aria-activedescendant','country-option-'+activeIndex);else input.removeAttribute('aria-activedescendant');
+        status.textContent=matches.length?matches.length+' countries found. Use the arrow keys to navigate and Enter to select.':'No countries found.';
+      }
+      function select(name){value.value=name;input.value=name;status.textContent=name+' selected.';close();}
+      input.addEventListener('focus',render);
+      input.addEventListener('input',()=>{value.value='';render();});
+      input.addEventListener('keydown',event=>{
+        if(event.key==='ArrowDown'||event.key==='ArrowUp'){
+          event.preventDefault();if(list.classList.contains('hidden'))render();
+          if(matches.length){activeIndex=(activeIndex+(event.key==='ArrowDown'?1:-1)+matches.length)%matches.length;[...list.querySelectorAll('[role="option"]')].forEach((option,index)=>option.setAttribute('aria-selected',index===activeIndex?'true':'false'));const active=list.querySelector('#country-option-'+activeIndex);input.setAttribute('aria-activedescendant',active.id);active.scrollIntoView({block:'nearest'});}
+        }else if(event.key==='Enter'&&!list.classList.contains('hidden')&&activeIndex>=0){event.preventDefault();select(matches[activeIndex]);}
+        else if(event.key==='Escape')close();
+      });
+      document.addEventListener('click',event=>{if(!wrapper.contains(event.target))close();});
+    }
     function renderSituations(){document.getElementById('situationChips').innerHTML=situations.map(s=>`<button type="button" aria-pressed="${state.situations.has(s)}" data-situation="${s}" class="chip rounded-full border border-slate-300 px-3.5 py-2 text-sm font-semibold text-slate-600 ${state.situations.has(s)?'selected':''}">${s}</button>`).join('');const n=state.situations.size,hint=document.getElementById('situationHint');if(state.situationError&&!n){hint.className='mt-2 text-xs font-bold text-rose-700';hint.textContent='Choose at least one bubble above so we can tailor your roadmap.'}else if(n){hint.className='mt-2 text-xs font-semibold text-emerald-700';hint.textContent=n+(n===1?' bubble selected':' bubbles selected')+' — add more or continue.'}else{hint.className='mt-2 text-xs font-semibold text-slate-400';hint.textContent='Pick one or more bubbles so we can tailor your roadmap.'}}
+    initCountryPicker();
     document.getElementById('situationChips').onclick=e=>{const b=e.target.closest('[data-situation]');if(!b)return;state.situations.has(b.dataset.situation)?state.situations.delete(b.dataset.situation):state.situations.add(b.dataset.situation);state.situationError=false;document.getElementById('onboardingNote').textContent='';renderSituations()};renderSituations();
     document.querySelectorAll('.account-tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.account-tab').forEach(x=>x.className='account-tab flex-1 rounded px-4 py-2.5 text-sm font-bold text-slate-500');b.className='account-tab flex-1 rounded bg-white px-4 py-2.5 text-sm font-bold text-byu-navy shadow-sm';toast(b.id==='loginTab'?'Returning student mode selected':'New student mode selected')});
     document.getElementById('continueBtn').onclick=()=>{state.country=document.getElementById('country').value;const note=document.getElementById('onboardingNote');const missing=[];if(!state.country)missing.push('your home country');if(!state.situations.size){missing.push('at least one situation bubble');state.situationError=true}if(missing.length){note.textContent='Please select '+missing.join(' and ')+' to continue.';renderSituations();if(!state.situations.size){const f=document.getElementById('situationField');f.classList.add('shake');setTimeout(()=>f.classList.remove('shake'),500);f.scrollIntoView({behavior:'smooth',block:'center'})}return}note.textContent='';showScreen(2);toast('Your preferences were saved')};
