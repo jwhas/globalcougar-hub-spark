@@ -69,7 +69,8 @@ function Index() {
   // Persist status updates to the shared database.
   const toggleMilestone = async (recordId: number, currentStatus: string) => {
     const nextStatus = currentStatus === 'completed' ? 'pending' : 'completed';
-    const nextDate = nextStatus === 'completed' ? new Date().toISOString().split('T')[0] : null;
+    const nextDate: string | null =
+      nextStatus === 'completed' ? new Date().toISOString().slice(0, 10) : null;
 
     // Optimistic local state update
     setMilestones((prev: Milestone[]) =>
