@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Keep the GlobalCougar prototype self-contained in `public/globalcougar.html` so it can be tested or shared as one runnable file.
+- Shared student data (milestone progress, discussion posts) is stored in Lovable Cloud `public` tables and reached through the API route under `src/routes/api/public/`, because a class demo needs one board and one checklist that every visitor sees; the HTML keeps its localStorage fallback so the single file still runs standalone.

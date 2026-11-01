@@ -122,7 +122,7 @@ export const Route = createFileRoute('/api/public/discussions')({
           return fail('Send a JSON body.', 400)
         }
         const input = (payload ?? {}) as Record<string, unknown>
-        const action = clean(input.action, 10)
+        const action = clean(input['action'], 10)
 
         const url = process.env['SUPABASE_URL']
         const key = process.env['SUPABASE_PUBLISHABLE_KEY']
@@ -154,9 +154,9 @@ export const Route = createFileRoute('/api/public/discussions')({
         if (studentError || !student) return fail('The board is not ready yet.', 503)
 
         if (action === 'thread') {
-          const title = clean(input.title, 140)
-          const body = clean(input.body, 2000)
-          const topicRaw = clean(input.topic, 40)
+          const title = clean(input['title'], 140)
+          const body = clean(input['body'], 2000)
+          const topicRaw = clean(input['topic'], 40)
           const topic = TOPICS.includes(topicRaw) ? topicRaw : 'Campus Life'
           if (title.length < 3) return fail('A title needs at least 3 characters.', 400)
           if (body.length < 1) return fail('Add some details to your post.', 400)
@@ -184,8 +184,8 @@ export const Route = createFileRoute('/api/public/discussions')({
         }
 
         if (action === 'reply') {
-          const body = clean(input.body, 1000)
-          const threadId = Number(input.thread_id)
+          const body = clean(input['body'], 1000)
+          const threadId = Number(input['thread_id'])
           if (body.length < 1) return fail('Write a reply first.', 400)
           if (!Number.isInteger(threadId) || threadId < 1) return fail('That discussion no longer exists.', 400)
 

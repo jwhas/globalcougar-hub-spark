@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { createFileRoute } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/')({
@@ -16,34 +16,48 @@ export const Route = createFileRoute('/')({
   component: Index,
 });
 
+type Milestone = {
+  id: number;
+  status: string;
+  completed_date: string | null;
+  milestone_id: number;
+  milestone: {
+    title: string;
+    office_location: string;
+    required_documents: string;
+    phase: number;
+    step_order: number;
+    is_checkpoint: boolean;
+  } | null;
+};
+
+// The prototype has no sign-in yet, so the checklist belongs to the demo student.
+const DEMO_STUDENT = 'James A.';
+
 function Index() {
-  const [milestones, setMilestones] = useState<any[]>([]);
+  const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [dbError, setDbError] = useState<string | null>(null);
 
-  // Fetch all assigned milestones for Demo Student (user_id = 1)
+  // Fetch every milestone assigned to the demo student.
   const fetchMilestones = async () => {
-    if (!supabase) {
-      setLoading(false);
-      return;
-    }
-    const { data, error } = await supabase
-      .from('USER_MILESTONE')
-      .select(`
-        id,
-        milestone_id,
-        status,
-        completed_date,
-        MILESTONE (
-          title,
-          office_location,
-          required_documents
+    try {
+      const { data, error } = await supabase
+        .from('user_milestone')
+        .select(
+          'id, status, completed_date, milestone_id, milestone(title, office_location, required_documents, phase, step_order, is_checkpoint), student!inner(name)',
         )
-      `)
-      .eq('user_id', 1)
-      .order('milestone_id', { ascending: true });
+        .eq('student.name', DEMO_STUDENT)
+        .order('step_order', { ascending: true, foreignTable: 'milestone' });
 
-    if (!error && data) {
-      setMilestones(data);
+      if (error) {
+        setDbError(error.message);
+      } else {
+        setDbError(null);
+        setMilestones((data ?? []) as unknown as Milestone[]);
+      }
+    } catch (error) {
+      setDbError(error instanceof Error ? error.message : 'Could not reach the database.');
     }
     setLoading(false);
   };
@@ -52,27 +66,24 @@ function Index() {
     fetchMilestones();
   }, []);
 
-  // Persist status updates to Supabase
+  // Persist status updates to the shared database.
   const toggleMilestone = async (recordId: number, currentStatus: string) => {
     const nextStatus = currentStatus === 'completed' ? 'pending' : 'completed';
-    const nextDate = nextStatus === 'completed' ? new Date().toISOString().split('T')[0] : null;
+    const nextDate: string | null =
+      nextStatus === 'completed' ? new Date().toISOString().slice(0, 10) : null;
 
     // Optimistic local state update
-    setMilestones((prev: any[]) =>
-      prev.map((item: any) =>
+    setMilestones((prev: Milestone[]) =>
+      prev.map((item: Milestone) =>
         item.id === recordId
           ? { ...item, status: nextStatus, completed_date: nextDate }
           : item
       )
     );
 
-    if (!supabase) return;
     const { error } = await supabase
-      .from('USER_MILESTONE')
-      .update({
-        status: nextStatus,
-        completed_date: nextDate,
-      })
+      .from('user_milestone')
+      .update({ status: nextStatus, completed_date: nextDate })
       .eq('id', recordId);
 
     if (error) {
@@ -81,11 +92,11 @@ function Index() {
     }
   };
 
-  const completedCount = milestones.filter((m: any) => m.status === 'completed').length;
+  const completedCount = milestones.filter((m: Milestone) => m.status === 'completed').length;
 
   return (
     <div className="flex flex-col h-screen w-full bg-slate-100">
-      {/* Dynamic Supabase Checkpoints Bar */}
+      {/* Dynamic database-backed checkpoints bar */}
       <section className="bg-white border-b border-gray-200 px-3 py-2 shadow-sm z-10 sm:px-6 sm:py-4">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between gap-2 pb-2 border-b border-gray-100 sm:pb-3">
@@ -93,33 +104,37 @@ function Index() {
               <h1 className="text-sm font-bold text-gray-900 sm:text-base">
                 Assigned Onboarding Checkpoints
               </h1>
-              <p className="text-[10px] text-gray-500 sm:text-xs">Live PostgreSQL Backend (USER_MILESTONE)</p>
+              <p className="text-[10px] text-gray-500 sm:text-xs">
+                Saved in the shared database (user_milestone)
+              </p>
             </div>
             <div className="shrink-0 whitespace-nowrap text-[10px] font-semibold px-2 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200 sm:px-2.5 sm:text-xs">
               Completed: {completedCount} / {milestones.length}
             </div>
           </div>
 
-          {!supabase ? (
+          {loading ? (
+            <p className="text-xs text-gray-400 py-3">Connecting to the database...</p>
+          ) : dbError ? (
             <p className="text-xs text-gray-500 py-3">
-              Database not connected. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to load checkpoints.
+              Database not connected: {dbError}
             </p>
-          ) : loading ? (
-            <p className="text-xs text-gray-400 py-3">Connecting to Supabase...</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 pt-2 sm:pt-3 max-h-36 overflow-y-auto sm:max-h-none">
-              {milestones.map((item: any) => (
+              {milestones.map((item: Milestone) => (
                 <div
                   key={item.id}
                   className="min-w-0 gap-2 p-2 bg-slate-50 border border-gray-200 rounded-lg flex items-center justify-between sm:p-3"
                 >
                   <div className="min-w-0 flex-1 pr-1 sm:pr-3">
                     <p className="text-[11px] font-bold text-gray-900 sm:text-xs">
-                      {item.MILESTONE?.title ?? `Milestone #${item.milestone_id}`}
+                      {item.milestone?.title ?? `Milestone #${item.milestone_id}`}
                     </p>
                     <p className="line-clamp-2 break-words text-[10px] leading-tight text-gray-500 sm:text-[11px]">
-                      {item.MILESTONE?.office_location ?? 'Campus Office'} • Required Docs:{' '}
-                      <span className="text-gray-700">{item.MILESTONE?.required_documents ?? 'None'}</span>
+                      {item.milestone?.office_location ?? 'Campus Office'} • Required Docs:{' '}
+                      <span className="text-gray-700">
+                        {item.milestone?.required_documents ?? 'None'}
+                      </span>
                     </p>
                   </div>
                   <button
@@ -142,7 +157,7 @@ function Index() {
       {/* Embedded Prototype Frame */}
       <iframe
         title="GlobalCougar prototype"
-        src="/globalcougar.html?v=7"
+        src="/globalcougar.html?v=8"
         className="min-h-0 min-w-0 flex-1 w-full border-0"
       />
     </div>
