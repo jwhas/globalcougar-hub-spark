@@ -1,0 +1,17 @@
+CREATE TABLE public.journey_progress (task_key text PRIMARY KEY CHECK (task_key ~ '^(core-(0[1-9]|1[0-4])|life-0[1-7])$'), status text NOT NULL DEFAULT 'not_started' CHECK (status IN ('not_started','in_progress','completed','not_applicable')), checklist integer[] NOT NULL DEFAULT '{}', completed_at timestamptz, updated_at timestamptz NOT NULL DEFAULT now());
+GRANT SELECT, INSERT, UPDATE ON public.journey_progress TO anon, authenticated;
+GRANT ALL ON public.journey_progress TO service_role;
+ALTER TABLE public.journey_progress ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Shared class demo progress read" ON public.journey_progress FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "Shared class demo progress insert" ON public.journey_progress FOR INSERT TO anon, authenticated WITH CHECK (true);
+CREATE POLICY "Shared class demo progress update" ON public.journey_progress FOR UPDATE TO anon, authenticated USING (true) WITH CHECK (true);
+INSERT INTO public.journey_progress (task_key, status, completed_at) SELECT mapped.task_key, u.status, u.completed_date::timestamptz FROM public.user_milestone u JOIN public.student s ON s.id=u.student_id JOIN public.milestone m ON m.id=u.milestone_id CROSS JOIN LATERAL (SELECT CASE m.title WHEN 'START: Obtain I-20 & Pay SEVIS Fee' THEN 'core-01' WHEN 'F-1 Visa Interview & Approval' THEN 'core-03' WHEN 'Book Flights to SLC / Provo' THEN 'core-08' WHEN 'BYU Housing Check-In' THEN 'life-01' WHEN 'Open Local Bank Account' THEN 'life-05' WHEN 'ISSS In-Person Check-In' THEN 'core-10' WHEN 'FINISH: First Day of Classes' THEN 'core-14' END AS task_key) mapped WHERE s.name='James A.' AND mapped.task_key IS NOT NULL;
+COMMENT ON TABLE public.journey_progress IS 'Public, shared class-demo progress only. Not private authenticated student records. Semantic keys preserve migration meaning; combined I-20/SEVIS completion maps conservatively to I-20 only.';
+CREATE TABLE public.journey_settings (id integer PRIMARY KEY DEFAULT 1 CHECK (id=1), semester text NOT NULL DEFAULT 'Winter 2027', account_start date, arrival date, program_start date, updated_at timestamptz NOT NULL DEFAULT now());
+GRANT SELECT, INSERT, UPDATE ON public.journey_settings TO anon, authenticated;
+GRANT ALL ON public.journey_settings TO service_role;
+ALTER TABLE public.journey_settings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Shared demo settings read" ON public.journey_settings FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "Shared demo settings insert" ON public.journey_settings FOR INSERT TO anon, authenticated WITH CHECK (id=1);
+CREATE POLICY "Shared demo settings update" ON public.journey_settings FOR UPDATE TO anon, authenticated USING (id=1) WITH CHECK (id=1);
+COMMENT ON TABLE public.journey_settings IS 'Non-sensitive shared class-demo planning dates only; do not store private student documents or identity information.';

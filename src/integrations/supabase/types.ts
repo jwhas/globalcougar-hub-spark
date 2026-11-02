@@ -88,6 +88,57 @@ export type Database = {
           },
         ]
       }
+      journey_progress: {
+        Row: {
+          checklist: number[]
+          completed_at: string | null
+          status: string
+          task_key: string
+          updated_at: string
+        }
+        Insert: {
+          checklist?: number[]
+          completed_at?: string | null
+          status?: string
+          task_key: string
+          updated_at?: string
+        }
+        Update: {
+          checklist?: number[]
+          completed_at?: string | null
+          status?: string
+          task_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      journey_settings: {
+        Row: {
+          account_start: string | null
+          arrival: string | null
+          id: number
+          program_start: string | null
+          semester: string
+          updated_at: string
+        }
+        Insert: {
+          account_start?: string | null
+          arrival?: string | null
+          id?: number
+          program_start?: string | null
+          semester?: string
+          updated_at?: string
+        }
+        Update: {
+          account_start?: string | null
+          arrival?: string | null
+          id?: number
+          program_start?: string | null
+          semester?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       milestone: {
         Row: {
           description: string
