@@ -46,6 +46,26 @@ npm run dev
 
 5. Open http://localhost:8080 in your browser.
 
+### GlobalCougar AI Assistant (OpenRouter)
+
+The chatbot calls the `globalcougar-chat` Supabase Edge Function. The browser
+never receives the OpenRouter key.
+
+1. Install and authenticate the [Supabase CLI](https://supabase.com/docs/guides/cli).
+2. From the repository root, link the project:
+   `supabase link --project-ref qyekvqxjwecncalfiaef`
+3. Store the existing OpenRouter key as a Supabase server secret. Run this
+   locally in your terminal; it reads the key without displaying it and never
+   puts it in chat, source code, or a committed file:
+   `read -s OPENROUTER_API_KEY && printf '\n' && supabase secrets set OPENROUTER_API_KEY="$OPENROUTER_API_KEY" && unset OPENROUTER_API_KEY`
+4. Deploy only the function:
+   `supabase functions deploy globalcougar-chat --no-verify-jwt`
+
+The function always uses the exact `openrouter/free` model, limits requests per
+client, bounds request size, redacts common identifiers, and returns a friendly
+retry message for rate limits or unavailable free models. The key must not use a
+`VITE_` prefix.
+
 ## Verifying the Vertical Slice
 1. Trigger the action: In the Assigned Onboarding Checkpoints section at the top, click Mark Complete on Milestone 2: Complete TB Skin Test.
 2. UI update: The button turns green, changes to Completed, and the counter updates from 1 / 2 to 2 / 2.

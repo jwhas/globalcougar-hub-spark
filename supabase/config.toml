@@ -1,1 +1,4 @@
 project_id = "awozprqhkpxbjbmofajr"
+
+[functions.globalcougar-chat]
+verify_jwt = false
