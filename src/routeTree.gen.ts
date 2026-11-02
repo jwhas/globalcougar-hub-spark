@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiPublicDiscussionsRouteImport } from './routes/api/public/discussions'
+import { Route as ApiPublicJourneyRouteImport } from './routes/api/public/journey'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,31 +23,40 @@ const ApiPublicDiscussionsRoute = ApiPublicDiscussionsRouteImport.update({
   path: '/api/public/discussions',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicJourneyRoute = ApiPublicJourneyRouteImport.update({
+  id: '/api/public/journey',
+  path: '/api/public/journey',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/api/public/discussions': typeof ApiPublicDiscussionsRoute
+  '/api/public/journey': typeof ApiPublicJourneyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/api/public/discussions': typeof ApiPublicDiscussionsRoute
+  '/api/public/journey': typeof ApiPublicJourneyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/api/public/discussions': typeof ApiPublicDiscussionsRoute
+  '/api/public/journey': typeof ApiPublicJourneyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/public/discussions'
+  fullPaths: '/' | '/api/public/discussions' | '/api/public/journey'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/public/discussions'
-  id: '__root__' | '/' | '/api/public/discussions'
+  to: '/' | '/api/public/discussions' | '/api/public/journey'
+  id: '__root__' | '/' | '/api/public/discussions' | '/api/public/journey'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ApiPublicDiscussionsRoute: typeof ApiPublicDiscussionsRoute
+  ApiPublicJourneyRoute: typeof ApiPublicJourneyRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +75,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicDiscussionsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/journey': {
+      id: '/api/public/journey'
+      path: '/api/public/journey'
+      fullPath: '/api/public/journey'
+      preLoaderRoute: typeof ApiPublicJourneyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ApiPublicDiscussionsRoute: ApiPublicDiscussionsRoute,
+  ApiPublicJourneyRoute: ApiPublicJourneyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
