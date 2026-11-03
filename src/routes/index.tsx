@@ -42,9 +42,8 @@ function Index() {
   const fetchMilestones = useCallback(async (studentName: string) => {
     setLoading(true);
     try {
-      // Changed to plural: user_milestones
       const { data, error } = await supabase
-        .from('user_milestones')
+        .from('user_milestone')
         .select('id, status, completed_date, milestone_id, milestone(title, office_location, required_documents, phase, step_order, is_checkpoint), student!inner(name)')
         .eq('student.name', studentName)
         .order('step_order', { ascending: true, foreignTable: 'milestone' });
@@ -109,9 +108,8 @@ function Index() {
       prev.map((item) => (item.id === recordId ? { ...item, status: nextStatus, completed_date: nextDate } : item))
     );
 
-    // Changed to plural: user_milestones
     const { error } = await supabase
-      .from('user_milestones')
+      .from('user_milestone')
       .update({ status: nextStatus, completed_date: nextDate })
       .eq('id', recordId);
 
