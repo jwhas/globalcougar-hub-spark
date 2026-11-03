@@ -211,3 +211,5 @@ function Index() {
     </div>
   );
 }
+
+{frameQuery && <iframe title="GlobalCougar prototype" src={`/globalcougar.html?${frameQuery}`} className="min-h-0 min-w-0 flex-1 w-full border-0" />}
