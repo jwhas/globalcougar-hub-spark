@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 
@@ -39,6 +39,7 @@ function Index() {
   const [currentUser, setCurrentUser] = useState<string>('Student');
   const [frameQuery, setFrameQuery] = useState<string>('');
   const navigate = useNavigate();
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const fetchMilestones = useCallback(async (studentName: string) => {
     setLoading(true);
@@ -125,14 +126,38 @@ function Index() {
     }
   };
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
       setDbError(`Could not log out: ${error.message}`);
       return;
     }
     void navigate({ to: '/login' });
-  };
+  }, [navigate]);
+
+  const syncPrototypeUser = useCallback(() => {
+    iframeRef.current?.contentWindow?.postMessage(
+      { type: 'gc-user', name: currentUser },
+      window.location.origin
+    );
+  }, [currentUser]);
+
+  useEffect(() => {
+    const handlePrototypeMessage = (event: MessageEvent) => {
+      if (
+        event.origin !== window.location.origin ||
+        event.source !== iframeRef.current?.contentWindow ||
+        event.data?.type !== 'gc-logout'
+      ) {
+        return;
+      }
+
+      void handleLogout();
+    };
+
+    window.addEventListener('message', handlePrototypeMessage);
+    return () => window.removeEventListener('message', handlePrototypeMessage);
+  }, [handleLogout]);
 
   const completedCount = milestones.filter((m) => m.status === 'completed').length;
 
@@ -194,6 +219,8 @@ function Index() {
       {/* Restores the iframe for your main website prototype */}
       {frameQuery && (
         <iframe 
+          ref={iframeRef}
+          onLoad={syncPrototypeUser}
           title="GlobalCougar prototype" 
           src={`/globalcougar.html?${frameQuery}`} 
           className="min-h-0 min-w-0 flex-1 w-full border-0 bg-white" 
