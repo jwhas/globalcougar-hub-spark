@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as ApiPublicDiscussionsRouteImport } from './routes/api/public/discussions'
 import { Route as ApiPublicJourneyRouteImport } from './routes/api/public/journey'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicDiscussionsRoute = ApiPublicDiscussionsRouteImport.update({
@@ -31,30 +37,39 @@ const ApiPublicJourneyRoute = ApiPublicJourneyRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/api/public/discussions': typeof ApiPublicDiscussionsRoute
   '/api/public/journey': typeof ApiPublicJourneyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/api/public/discussions': typeof ApiPublicDiscussionsRoute
   '/api/public/journey': typeof ApiPublicJourneyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/api/public/discussions': typeof ApiPublicDiscussionsRoute
   '/api/public/journey': typeof ApiPublicJourneyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/public/discussions' | '/api/public/journey'
+  fullPaths: '/' | '/login' | '/api/public/discussions' | '/api/public/journey'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/public/discussions' | '/api/public/journey'
-  id: '__root__' | '/' | '/api/public/discussions' | '/api/public/journey'
+  to: '/' | '/login' | '/api/public/discussions' | '/api/public/journey'
+  id:
+    | '__root__'
+    | '/'
+    | '/login'
+    | '/api/public/discussions'
+    | '/api/public/journey'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  LoginRoute: typeof LoginRoute
   ApiPublicDiscussionsRoute: typeof ApiPublicDiscussionsRoute
   ApiPublicJourneyRoute: typeof ApiPublicJourneyRoute
 }
@@ -66,6 +81,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/discussions': {
@@ -87,6 +109,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  LoginRoute: LoginRoute,
   ApiPublicDiscussionsRoute: ApiPublicDiscussionsRoute,
   ApiPublicJourneyRoute: ApiPublicJourneyRoute,
 }
