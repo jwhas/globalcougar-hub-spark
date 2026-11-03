@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 
@@ -34,24 +34,8 @@ function Index() {
   const [currentUser, setCurrentUser] = useState<string>('Student');
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const enforceAuth = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
-      if (error || !session) {
-        navigate({ to: '/login' });
-        return;
-      }
-
-      const name = session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Student';
-      setCurrentUser(name);
-      fetchMilestones(name);
-    };
-
-    enforceAuth();
-  }, [navigate]);
-
-  const fetchMilestones = async (studentName: string) => {
+  const fetchMilestones = useCallback(async (studentName: string) => {
+    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('user_milestone')
@@ -59,13 +43,61 @@ function Index() {
         .eq('student.name', studentName)
         .order('step_order', { ascending: true, foreignTable: 'milestone' });
 
-      if (error) setDbError(error.message);
-      else setMilestones((data ?? []) as unknown as Milestone[]);
+      if (error) {
+        setDbError(error.message);
+      } else {
+        setDbError(null);
+        setMilestones((data ?? []) as unknown as Milestone[]);
+      }
     } catch (error) {
       setDbError(error instanceof Error ? error.message : 'Database error.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    const enforceAuth = async () => {
+      try {
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession();
+
+        if (!active) return;
+        if (error) {
+          setDbError(`Could not verify your session: ${error.message}`);
+          setLoading(false);
+          return;
+        }
+        if (!session) {
+          setLoading(false);
+          void navigate({ to: '/login' });
+          return;
+        }
+
+        const name =
+          session.user.user_metadata?.['full_name'] ||
+          session.user.email?.split('@')[0] ||
+          'Student';
+        setCurrentUser(name);
+        await fetchMilestones(name);
+      } catch (error) {
+        if (!active) return;
+        setDbError(
+          error instanceof Error ? error.message : 'Could not verify your session.',
+        );
+        setLoading(false);
+      }
+    };
+
+    void enforceAuth();
+    return () => {
+      active = false;
+    };
+  }, [fetchMilestones, navigate]);
 
   const toggleMilestone = async (recordId: number, currentStatus: string) => {
     const nextStatus = currentStatus === 'completed' ? 'pending' : 'completed';
@@ -82,13 +114,19 @@ function Index() {
 
     if (error) {
       console.error('Update failed:', error.message);
-      fetchMilestones(currentUser);
+      setDbError(`Could not update checkpoint: ${error.message}`);
+      await fetchMilestones(currentUser);
+      setDbError(`Could not update checkpoint: ${error.message}`);
     }
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate({ to: '/login' });
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      setDbError(`Could not log out: ${error.message}`);
+      return;
+    }
+    void navigate({ to: '/login' });
   };
 
   const completedCount = milestones.filter((m) => m.status === 'completed').length;
@@ -120,6 +158,10 @@ function Index() {
             <p className="text-xs text-gray-400 py-3">Connecting...</p>
           ) : dbError ? (
             <p className="text-xs text-gray-500 py-3">Error: {dbError}</p>
+          ) : milestones.length === 0 ? (
+            <p className="text-xs text-gray-500 py-3">
+              No checkpoints are assigned to this account yet.
+            </p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 pt-2 sm:pt-3 max-h-36 overflow-y-auto sm:max-h-none">
               {milestones.map((item) => (
