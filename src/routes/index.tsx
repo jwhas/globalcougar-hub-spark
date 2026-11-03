@@ -37,12 +37,12 @@ function Index() {
   const [loading, setLoading] = useState<boolean>(true);
   const [dbError, setDbError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<string>('Student');
+  const [frameQuery, setFrameQuery] = useState<string>('');
   const navigate = useNavigate();
 
   const fetchMilestones = useCallback(async (studentName: string) => {
     setLoading(true);
     try {
-      // Changed to exact ALL CAPS spelling to match your Supabase database
       const { data, error } = await supabase
         .from('USER_MILESTONE')
         .select('id, status, completed_date, milestone_id, MILESTONE(title, office_location, required_documents, phase, step_order, is_checkpoint), USER!inner(name)')
@@ -81,12 +81,16 @@ function Index() {
           return;
         }
 
-        const name =
-          session.user.user_metadata?.['full_name'] ||
-          session.user.email?.split('@')[0] ||
-          'Student';
-        
+        const name = session.user.user_metadata?.['full_name'] || session.user.email?.split('@')[0] || 'Student';
         setCurrentUser(name);
+        
+        // Restore iframe URL parameters for the prototype
+        const meta = session.user.user_metadata ?? {};
+        const qs = new URLSearchParams({ v: '9' });
+        if (meta['country']) qs.set('country', String(meta['country']));
+        if (Array.isArray(meta['help_topics'])) qs.set('interests', meta['help_topics'].join('|'));
+        setFrameQuery(qs.toString());
+
         await fetchMilestones(name);
       } catch (error) {
         if (!active) return;
@@ -109,7 +113,6 @@ function Index() {
       prev.map((item) => (item.id === recordId ? { ...item, status: nextStatus, completed_date: nextDate } : item))
     );
 
-    // Exact ALL CAPS spelling
     const { error } = await supabase
       .from('USER_MILESTONE')
       .update({ status: nextStatus, completed_date: nextDate })
@@ -135,7 +138,7 @@ function Index() {
 
   return (
     <div className="flex flex-col h-screen w-full bg-slate-100">
-      <section className="bg-white border-b border-gray-200 px-3 py-2 shadow-sm z-10 sm:px-6 sm:py-4">
+      <section className="bg-white border-b border-gray-200 px-3 py-2 shadow-sm z-10 sm:px-6 sm:py-4 shrink-0">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between gap-2 pb-2 border-b border-gray-100 sm:pb-3">
             <div className="min-w-0">
@@ -165,17 +168,17 @@ function Index() {
               No checkpoints are assigned to this account yet.
             </p>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 pt-2 sm:pt-3 max-h-36 overflow-y-auto sm:max-h-none">
+            <div className="flex gap-2 sm:gap-3 pt-2 sm:pt-3 overflow-x-auto pb-2 scrollbar-thin">
               {milestones.map((item) => (
-                <div key={item.id} className="min-w-0 gap-2 p-2 bg-slate-50 border border-gray-200 rounded-lg flex items-center justify-between sm:p-3">
-                  <div className="min-w-0 flex-1 pr-1 sm:pr-3">
-                    <p className="text-[11px] font-bold text-gray-900 sm:text-xs">
+                <div key={item.id} className="w-64 shrink-0 gap-2 p-2 bg-slate-50 border border-gray-200 rounded-lg flex flex-col justify-between sm:p-3">
+                  <div className="min-w-0 flex-1 mb-2">
+                    <p className="text-[11px] font-bold text-gray-900 sm:text-xs line-clamp-2">
                       {item.MILESTONE?.title ?? `Milestone #${item.milestone_id}`}
                     </p>
                   </div>
                   <button
                     onClick={() => toggleMilestone(item.id, item.status)}
-                    className={`px-2 py-1 rounded text-[10px] font-semibold transition-colors shrink-0 sm:px-3 sm:py-1.5 sm:text-xs ${
+                    className={`w-full px-2 py-1 rounded text-[10px] font-semibold transition-colors sm:px-3 sm:py-1.5 sm:text-xs ${
                       item.status === 'completed' ? 'bg-emerald-600 text-white' : 'bg-white text-gray-700 border border-gray-300'
                     }`}
                   >
@@ -187,6 +190,15 @@ function Index() {
           )}
         </div>
       </section>
+
+      {/* Restores the iframe for your main website prototype */}
+      {frameQuery && (
+        <iframe 
+          title="GlobalCougar prototype" 
+          src={`/globalcougar.html?${frameQuery}`} 
+          className="min-h-0 min-w-0 flex-1 w-full border-0 bg-white" 
+        />
+      )}
     </div>
   );
 }
