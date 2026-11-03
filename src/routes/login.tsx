@@ -3,70 +3,113 @@ import { supabase } from '@/integrations/supabase/client';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/login')({
-  component: Login,
+  component: AuthPage,
 });
 
-function Login() {
+function AuthPage() {
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
 
-    // Query your Supabase user table to check if the student exists
-    const { data, error: dbError } = await supabase
-      .from('USER') // Matches the normalized entity from your database design
-      .select('name')
-      .eq('name', name)
-      .single();
-
-    if (dbError || !data) {
-      setError('User not found. Try entering "James A."');
-      setLoading(false);
+    if (!email || !password || (!isLogin && !name)) {
+      setError("You must fill in all fields to continue.");
       return;
     }
 
-    // Save to the computer's browser storage
-    localStorage.setItem('globalcougar_user', data.name);
+    setLoading(true);
+
+    if (isLogin) {
+      const { error: authError } = await supabase.auth.signInWithPassword({ 
+        email, 
+        password 
+      });
+      if (authError) setError(authError.message);
+      else navigate({ to: '/' });
+    } else {
+      const { error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: name } }
+      });
+      if (authError) setError(authError.message);
+      else navigate({ to: '/' });
+    }
     
-    // Redirect back to the home page
-    navigate({ to: '/' });
+    setLoading(false);
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
       <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-sm">
-        <h1 className="text-xl font-bold text-gray-900 mb-4">Student Login</h1>
+        <h1 className="text-xl font-bold text-gray-900 mb-4">
+          {isLogin ? 'Log In' : 'Create Account'}
+        </h1>
         
-        <form onSubmit={handleLogin} className="flex flex-col gap-4">
+        <form onSubmit={handleAuth} className="flex flex-col gap-4">
+          {!isLogin && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g., James A."
+                className="w-full px-3 py-2 border border-gray-300 rounded"
+              />
+            </div>
+          )}
+          
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Full Name
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., James A."
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
-              required
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              className="w-full px-3 py-2 border border-gray-300 rounded"
             />
           </div>
 
-          {error && <p className="text-xs text-red-600">{error}</p>}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Min 6 characters"
+              className="w-full px-3 py-2 border border-gray-300 rounded"
+            />
+          </div>
+
+          {error && <p className="text-xs text-red-600 font-semibold">{error}</p>}
 
           <button
             type="submit"
             disabled={loading}
             className="w-full bg-blue-600 text-white font-semibold py-2 rounded hover:bg-blue-700 disabled:bg-blue-300"
           >
-            {loading ? 'Logging in...' : 'Log In'}
+            {loading ? 'Processing...' : isLogin ? 'Log In' : 'Sign Up'}
           </button>
         </form>
+
+        <p className="mt-4 text-sm text-center text-gray-600">
+          {isLogin ? "Don't have an account? " : "Already have an account? "}
+          <button 
+            type="button" 
+            onClick={() => setIsLogin(!isLogin)} 
+            className="text-blue-600 hover:underline"
+          >
+            {isLogin ? 'Sign up' : 'Log in'}
+          </button>
+        </p>
       </div>
     </div>
   );
