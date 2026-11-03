@@ -1,19 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
+
+// Hardcode Supabase credentials to bypass Vercel environment variable issues
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://qyekvqxjwecncalfiaef.supabase.co';
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5ZWt2cXhqd2VjbmNhbGZpYWVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyMzAzNDgsImV4cCI6MjEwNjgwNjM0OH0.02YDl_sKggpguJ7XHBTrImssufADAcnwPoYtDqK7B1c';
 const supabase = createClient(supabaseUrl, supabaseKey);
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/')({
   head: () => ({
     meta: [
       { title: 'GlobalCougar | BYU International Student Hub' },
       { name: 'description', content: 'An interactive BYU international student hub.' },
-      { property: 'og:title', content: 'GlobalCougar | BYU International Student Hub' },
-      { property: 'og:description', content: 'An interactive BYU international student hub.' },
-      { property: 'og:type', content: 'website' },
-      { name: 'twitter:card', content: 'summary' },
     ],
   }),
   component: Index,
@@ -39,7 +37,6 @@ function Index() {
   const [loading, setLoading] = useState<boolean>(true);
   const [dbError, setDbError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<string>('Student');
-  const [frameQuery, setFrameQuery] = useState<string>('');
   const navigate = useNavigate();
 
   const fetchMilestones = useCallback(async (studentName: string) => {
@@ -69,10 +66,7 @@ function Index() {
 
     const enforceAuth = async () => {
       try {
-        const {
-          data: { session },
-          error,
-        } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession();
 
         if (!active) return;
         if (error) {
@@ -90,18 +84,12 @@ function Index() {
           session.user.user_metadata?.['full_name'] ||
           session.user.email?.split('@')[0] ||
           'Student';
+        
         setCurrentUser(name);
-        const meta = session.user.user_metadata ?? {};
-        const qs = new URLSearchParams({ v: '9' });
-        if (meta['home_country']) qs.set('country', String(meta['home_country']));
-        if (Array.isArray(meta['situations'])) qs.set('interests', meta['situations'].join('|'));
-        setFrameQuery(qs.toString());
         await fetchMilestones(name);
       } catch (error) {
         if (!active) return;
-        setDbError(
-          error instanceof Error ? error.message : 'Could not verify your session.',
-        );
+        setDbError(error instanceof Error ? error.message : 'Could not verify your session.');
         setLoading(false);
       }
     };
@@ -129,7 +117,6 @@ function Index() {
       console.error('Update failed:', error.message);
       setDbError(`Could not update checkpoint: ${error.message}`);
       await fetchMilestones(currentUser);
-      setDbError(`Could not update checkpoint: ${error.message}`);
     }
   };
 
@@ -141,14 +128,6 @@ function Index() {
     }
     void navigate({ to: '/login' });
   };
-
-  useEffect(() => {
-    const onMsg = (e: MessageEvent) => {
-      if (e.origin === window.location.origin && e.data?.type === 'gc-logout') void handleLogout();
-    };
-    window.addEventListener('message', onMsg);
-    return () => window.removeEventListener('message', onMsg);
-  });
 
   const completedCount = milestones.filter((m) => m.status === 'completed').length;
 
@@ -178,7 +157,7 @@ function Index() {
           {loading ? (
             <p className="text-xs text-gray-400 py-3">Connecting...</p>
           ) : dbError ? (
-            <p className="text-xs text-gray-500 py-3">Error: {dbError}</p>
+            <p className="text-xs text-red-600 font-semibold py-3">Error: {dbError}</p>
           ) : milestones.length === 0 ? (
             <p className="text-xs text-gray-500 py-3">
               No checkpoints are assigned to this account yet.
@@ -206,10 +185,6 @@ function Index() {
           )}
         </div>
       </section>
-
-      {frameQuery && <iframe title="GlobalCougar prototype" src={`/globalcougar.html?${frameQuery}`} className="min-h-0 min-w-0 flex-1 w-full border-0" />}
     </div>
   );
 }
-
-{frameQuery && <iframe title="GlobalCougar prototype" src={`/globalcougar.html?${frameQuery}`} className="min-h-0 min-w-0 flex-1 w-full border-0" />}
