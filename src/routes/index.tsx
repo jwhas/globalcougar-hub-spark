@@ -11,7 +11,7 @@ export const Route = createFileRoute('/')({
   head: () => ({
     meta: [
       { title: 'GlobalCougar | BYU International Student Hub' },
-      { name: 'description', content: 'An interactive BYU international student hub.' },
+      { name: 'description', content: 'An interactive BYU International Student Hub.' },
     ],
   }),
   component: Index,
@@ -22,7 +22,7 @@ type Milestone = {
   status: string;
   completed_date: string | null;
   milestone_id: number;
-  milestone: {
+  MILESTONE: {
     title: string;
     office_location: string;
     required_documents: string;
@@ -42,11 +42,12 @@ function Index() {
   const fetchMilestones = useCallback(async (studentName: string) => {
     setLoading(true);
     try {
+      // Changed to exact ALL CAPS spelling to match your Supabase database
       const { data, error } = await supabase
-        .from('user_milestone')
-        .select('id, status, completed_date, milestone_id, milestone(title, office_location, required_documents, phase, step_order, is_checkpoint), student!inner(name)')
-        .eq('student.name', studentName)
-        .order('step_order', { ascending: true, foreignTable: 'milestone' });
+        .from('USER_MILESTONE')
+        .select('id, status, completed_date, milestone_id, MILESTONE(title, office_location, required_documents, phase, step_order, is_checkpoint), USER!inner(name)')
+        .eq('USER.name', studentName)
+        .order('step_order', { ascending: true, foreignTable: 'MILESTONE' });
 
       if (error) {
         setDbError(error.message);
@@ -108,8 +109,9 @@ function Index() {
       prev.map((item) => (item.id === recordId ? { ...item, status: nextStatus, completed_date: nextDate } : item))
     );
 
+    // Exact ALL CAPS spelling
     const { error } = await supabase
-      .from('user_milestone')
+      .from('USER_MILESTONE')
       .update({ status: nextStatus, completed_date: nextDate })
       .eq('id', recordId);
 
@@ -168,7 +170,7 @@ function Index() {
                 <div key={item.id} className="min-w-0 gap-2 p-2 bg-slate-50 border border-gray-200 rounded-lg flex items-center justify-between sm:p-3">
                   <div className="min-w-0 flex-1 pr-1 sm:pr-3">
                     <p className="text-[11px] font-bold text-gray-900 sm:text-xs">
-                      {item.milestone?.title ?? `Milestone #${item.milestone_id}`}
+                      {item.MILESTONE?.title ?? `Milestone #${item.milestone_id}`}
                     </p>
                   </div>
                   <button
