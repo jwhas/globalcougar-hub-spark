@@ -7,6 +7,10 @@ export const Route = createFileRoute('/')({
     meta: [
       { title: 'GlobalCougar | BYU International Student Hub' },
       { name: 'description', content: 'An interactive BYU international student hub.' },
+      { property: 'og:title', content: 'GlobalCougar | BYU International Student Hub' },
+      { property: 'og:description', content: 'An interactive BYU international student hub.' },
+      { property: 'og:type', content: 'website' },
+      { name: 'twitter:card', content: 'summary' },
     ],
   }),
   component: Index,
@@ -32,6 +36,7 @@ function Index() {
   const [loading, setLoading] = useState<boolean>(true);
   const [dbError, setDbError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<string>('Student');
+  const [frameQuery, setFrameQuery] = useState<string>('');
   const navigate = useNavigate();
 
   const fetchMilestones = useCallback(async (studentName: string) => {
@@ -83,6 +88,11 @@ function Index() {
           session.user.email?.split('@')[0] ||
           'Student';
         setCurrentUser(name);
+        const meta = session.user.user_metadata ?? {};
+        const qs = new URLSearchParams({ v: '9' });
+        if (meta['home_country']) qs.set('country', String(meta['home_country']));
+        if (Array.isArray(meta['situations'])) qs.set('interests', meta['situations'].join('|'));
+        setFrameQuery(qs.toString());
         await fetchMilestones(name);
       } catch (error) {
         if (!active) return;
@@ -128,6 +138,14 @@ function Index() {
     }
     void navigate({ to: '/login' });
   };
+
+  useEffect(() => {
+    const onMsg = (e: MessageEvent) => {
+      if (e.origin === window.location.origin && e.data?.type === 'gc-logout') void handleLogout();
+    };
+    window.addEventListener('message', onMsg);
+    return () => window.removeEventListener('message', onMsg);
+  });
 
   const completedCount = milestones.filter((m) => m.status === 'completed').length;
 
@@ -186,7 +204,7 @@ function Index() {
         </div>
       </section>
 
-      <iframe title="GlobalCougar prototype" src="/globalcougar.html?v=8" className="min-h-0 min-w-0 flex-1 w-full border-0" />
+      {frameQuery && <iframe title="GlobalCougar prototype" src={`/globalcougar.html?${frameQuery}`} className="min-h-0 min-w-0 flex-1 w-full border-0" />}
     </div>
   );
 }
