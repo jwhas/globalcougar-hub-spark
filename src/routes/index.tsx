@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { createClient } from '@supabase/supabase-js';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://qyekvqxjwecncalfiaef.supabase.co';
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5ZWt2cXhqd2VjbmNhbGZpYWVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyMzAzNDgsImV4cCI6MjEwNjgwNjM0OH0.02YDl_sKggpguJ7XHBTrImssufADAcnwPoYtDqK7B1c';
+const supabase = createClient(supabaseUrl, supabaseKey);
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/')({
