@@ -27,7 +27,7 @@ function describeAuthError(message: string): Feedback {
   if (m.includes('invalid login credentials') || m.includes('invalid email or password')) {
     return {
       title: 'We could not match that email and password',
-      detail: 'Check for a typo, or use the email you signed up with. New here? Open the Begin tab to create an account.',
+      detail: 'Check for a typo, or use the email you signed up with. New here? Open the Sign In tab to create an account.',
     };
   }
   if (m.includes('email not confirmed') || m.includes('not confirmed')) {
@@ -165,14 +165,14 @@ function AuthPage() {
               onClick={() => setIsLogin(true)}
               className={`flex-1 py-2.5 text-sm font-bold rounded-md transition-all ${isLogin ? 'bg-white text-[#003366] shadow' : 'text-gray-500 hover:text-gray-700'}`}
             >
-              Login (Returning User)
+              Login
             </button>
             <button
               type="button"
               onClick={() => setIsLogin(false)}
               className={`flex-1 py-2.5 text-sm font-bold rounded-md transition-all ${!isLogin ? 'bg-white text-[#003366] shadow' : 'text-gray-500 hover:text-gray-700'}`}
             >
-              Begin (New User)
+              Sign In
             </button>
           </div>
 
