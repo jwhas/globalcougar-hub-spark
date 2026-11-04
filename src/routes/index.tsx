@@ -1,11 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-
-// Hardcode Supabase credentials to bypass Vercel environment variable issues
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://qyekvqxjwecncalfiaef.supabase.co';
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5ZWt2cXhqd2VjbmNhbGZpYWVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyMzAzNDgsImV4cCI6MjEwNjgwNjM0OH0.02YDl_sKggpguJ7XHBTrImssufADAcnwPoYtDqK7B1c';
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { supabase } from '@/integrations/supabase/client';
 
 export const Route = createFileRoute('/')({
   head: () => ({
@@ -87,7 +82,7 @@ function Index() {
         
         // Restore iframe URL parameters for the prototype
         const meta = session.user.user_metadata ?? {};
-        const qs = new URLSearchParams({ v: '9', home: '1' });
+        const qs = new URLSearchParams({ v: '10', home: '1' });
         if (meta['country']) qs.set('country', String(meta['country']));
         if (Array.isArray(meta['help_topics'])) qs.set('interests', meta['help_topics'].join('|'));
         setFrameQuery(qs.toString());
