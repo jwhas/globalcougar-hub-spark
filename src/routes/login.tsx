@@ -6,6 +6,73 @@ export const Route = createFileRoute('/login')({
   component: AuthPage,
 });
 
+type Feedback = { title: string; detail: string };
+
+// Turn the raw text the auth server returns into wording a student can act on.
+function describeAuthError(message: string): Feedback {
+  const m = (message || '').toLowerCase();
+
+  if (m.includes('weak') || m.includes('known to be') || m.includes('easy to guess') || m.includes('common password') || m.includes('hibp')) {
+    return {
+      title: 'Please choose a different password',
+      detail: "This password has appeared in a known data breach. For your security, please create a unique password that you haven't used before.",
+    };
+  }
+  if (m.includes('at least') && m.includes('character')) {
+    return {
+      title: 'Your password is too short',
+      detail: 'Please use a longer password, at least 6 characters, that you have not used anywhere else.',
+    };
+  }
+  if (m.includes('invalid login credentials') || m.includes('invalid email or password')) {
+    return {
+      title: 'We could not match that email and password',
+      detail: 'Check for a typo, or use the email you signed up with. New here? Open the Begin tab to create an account.',
+    };
+  }
+  if (m.includes('email not confirmed') || m.includes('not confirmed')) {
+    return {
+      title: 'Please confirm your email first',
+      detail: 'We sent a confirmation link when you created your account. Open that email and click the link, then log in here.',
+    };
+  }
+  if (m.includes('already registered') || m.includes('already exists') || m.includes('already been registered')) {
+    return {
+      title: 'This email already has an account',
+      detail: 'Switch to the Login tab to sign in, or use a different email to create a new account.',
+    };
+  }
+  if (m.includes('invalid email') || m.includes('validate email') || m.includes('email address is invalid')) {
+    return {
+      title: 'That email address does not look right',
+      detail: 'Please enter a full address such as you@byu.edu.',
+    };
+  }
+  if (m.includes('rate limit') || m.includes('too many') || m.includes('try again later') || m.includes('for security')) {
+    return {
+      title: 'Too many attempts for now',
+      detail: 'Please wait a few minutes and try again. If it keeps happening, we can help you reset your password.',
+    };
+  }
+  if (m.includes('signups not allowed') || m.includes('signup not allowed')) {
+    return {
+      title: 'New accounts are closed right now',
+      detail: 'Please log in with an existing account, or check back later.',
+    };
+  }
+  if (m.includes('failed to fetch') || m.includes('networkerror') || m.includes('load failed')) {
+    return {
+      title: 'We could not reach the server',
+      detail: 'Check your internet connection and try again. Nothing was saved from this attempt.',
+    };
+  }
+
+  return {
+    title: 'Something went wrong',
+    detail: message || 'Please try again. If it keeps happening, let us know and we will fix it.',
+  };
+}
+
 function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -13,7 +80,7 @@ function AuthPage() {
   const [name, setName] = useState('');
   const [country, setCountry] = useState('');
   const [selectedHelpTopics, setSelectedHelpTopics] = useState<string[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Feedback | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -34,20 +101,34 @@ function AuthPage() {
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!email || !password || (!isLogin && (!name || !country || selectedHelpTopics.length === 0))) {
-      setError("Please fill in all required fields and select at least one interest.");
+
+    const missing: string[] = [];
+    if (!isLogin) {
+      if (!name.trim()) missing.push('your full name');
+      if (!country.trim()) missing.push('your home country');
+      if (selectedHelpTopics.length === 0) missing.push('at least one interest');
+    }
+    if (!email.trim()) missing.push('your email');
+    if (!password) missing.push('a password');
+
+    if (missing.length > 0) {
+      setError({
+        title: 'Please finish these first',
+        detail: `Still needed: ${missing.join(', ')}.`,
+      });
       return;
     }
+
     setLoading(true);
     if (isLogin) {
       const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
-      if (authError) setError(authError.message);
+      if (authError) setError(describeAuthError(authError.message));
       else navigate({ to: '/' });
     } else {
       const { error: authError } = await supabase.auth.signUp({
         email, password, options: { data: { full_name: name, country, help_topics: selectedHelpTopics } }
       });
-      if (authError) setError(authError.message);
+      if (authError) setError(describeAuthError(authError.message));
       else navigate({ to: '/' });
     }
     setLoading(false);
@@ -169,8 +250,9 @@ function AuthPage() {
             </div>
 
             {error && (
-              <div className="text-red-600 text-sm font-bold bg-red-50 p-3 rounded-lg border border-red-100">
-                {error}
+              <div role="alert" className="text-sm bg-red-50 p-4 rounded-lg border border-red-200">
+                <div className="font-bold text-red-700 mb-1">{error.title}</div>
+                <div className="text-red-600 leading-relaxed">{error.detail}</div>
               </div>
             )}
 
