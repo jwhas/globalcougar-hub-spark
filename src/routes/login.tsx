@@ -75,16 +75,6 @@ function AuthPage() {
           <p className="text-gray-600 text-lg mb-12 leading-relaxed">
             A personalized home base for international students—from pre-arrival paperwork to your first semester in Provo.
           </p>
-
-          <div className="bg-[#003366] text-white p-6 rounded-xl flex items-center gap-4 shadow-lg shadow-blue-900/20">
-            <div className="w-10 h-10 rounded-full border-2 border-white flex items-center justify-center font-bold font-serif shrink-0">
-              Y
-            </div>
-            <div>
-              <div className="text-xs font-bold tracking-wider text-blue-200 mb-1">BUILT FOR BELONGING</div>
-              <div className="font-medium text-lg">You're not navigating BYU alone.</div>
-            </div>
-          </div>
         </div>
       </div>
 
