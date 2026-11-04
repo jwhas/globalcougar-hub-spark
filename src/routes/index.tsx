@@ -1,11 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-
-// Hardcode Supabase credentials to bypass Vercel environment variable issues
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://qyekvqxjwecncalfiaef.supabase.co';
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5ZWt2cXhqd2VjbmNhbGZpYWVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyMzAzNDgsImV4cCI6MjEwNjgwNjM0OH0.02YDl_sKggpguJ7XHBTrImssufADAcnwPoYtDqK7B1c';
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { supabase } from '@/integrations/supabase/client';
 
 export const Route = createFileRoute('/')({
   head: () => ({
@@ -22,7 +17,7 @@ type Milestone = {
   status: string;
   completed_date: string | null;
   milestone_id: number;
-  MILESTONE: {
+  milestone: {
     title: string;
     office_location: string;
     required_documents: string;
@@ -45,10 +40,10 @@ function Index() {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('USER_MILESTONE')
-        .select('id, status, completed_date, milestone_id, MILESTONE(title, office_location, required_documents, phase, step_order, is_checkpoint), USER!inner(name)')
-        .eq('USER.name', studentName)
-        .order('step_order', { ascending: true, foreignTable: 'MILESTONE' });
+        .from('user_milestone')
+        .select('id, status, completed_date, milestone_id, milestone(title, office_location, required_documents, phase, step_order, is_checkpoint), student!inner(name)')
+        .eq('student.name', studentName)
+        .order('step_order', { ascending: true, foreignTable: 'milestone' });
 
       if (error) {
         setDbError(error.message);
@@ -87,7 +82,7 @@ function Index() {
         
         // Restore iframe URL parameters for the prototype
         const meta = session.user.user_metadata ?? {};
-        const qs = new URLSearchParams({ v: '9', home: '1' });
+        const qs = new URLSearchParams({ v: '10', home: '1' });
         if (meta['country']) qs.set('country', String(meta['country']));
         if (Array.isArray(meta['help_topics'])) qs.set('interests', meta['help_topics'].join('|'));
         setFrameQuery(qs.toString());
@@ -115,7 +110,7 @@ function Index() {
     );
 
     const { error } = await supabase
-      .from('USER_MILESTONE')
+      .from('user_milestone')
       .update({ status: nextStatus, completed_date: nextDate })
       .eq('id', recordId);
 
@@ -198,7 +193,7 @@ function Index() {
                 <div key={item.id} className="w-64 shrink-0 gap-2 p-2 bg-slate-50 border border-gray-200 rounded-lg flex flex-col justify-between sm:p-3">
                   <div className="min-w-0 flex-1 mb-2">
                     <p className="text-[11px] font-bold text-gray-900 sm:text-xs line-clamp-2">
-                      {item.MILESTONE?.title ?? `Milestone #${item.milestone_id}`}
+                      {item.milestone?.title ?? `Milestone #${item.milestone_id}`}
                     </p>
                   </div>
                   <button

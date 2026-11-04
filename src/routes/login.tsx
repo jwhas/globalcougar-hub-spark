@@ -1,11 +1,6 @@
 import { useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-
-// Bypass Lovable client and hardcode Supabase credentials
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://qyekvqxjwecncalfiaef.supabase.co';
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5ZWt2cXhqd2VjbmNhbGZpYWVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyMzAzNDgsImV4cCI6MjEwNjgwNjM0OH0.02YDl_sKggpguJ7XHBTrImssufADAcnwPoYtDqK7B1c';
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { supabase } from '@/integrations/supabase/client';
 
 export const Route = createFileRoute('/login')({
   component: AuthPage,
@@ -75,16 +70,6 @@ function AuthPage() {
           <p className="text-gray-600 text-lg mb-12 leading-relaxed">
             A personalized home base for international students—from pre-arrival paperwork to your first semester in Provo.
           </p>
-
-          <div className="bg-[#003366] text-white p-6 rounded-xl flex items-center gap-4 shadow-lg shadow-blue-900/20">
-            <div className="w-10 h-10 rounded-full border-2 border-white flex items-center justify-center font-bold font-serif shrink-0">
-              Y
-            </div>
-            <div>
-              <div className="text-xs font-bold tracking-wider text-blue-200 mb-1">BUILT FOR BELONGING</div>
-              <div className="font-medium text-lg">You're not navigating BYU alone.</div>
-            </div>
-          </div>
         </div>
       </div>
 
