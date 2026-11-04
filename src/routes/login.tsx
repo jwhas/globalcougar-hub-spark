@@ -6,6 +6,73 @@ export const Route = createFileRoute('/login')({
   component: AuthPage,
 });
 
+type Feedback = { title: string; detail: string };
+
+// Turn the raw text the auth server returns into wording a student can act on.
+function describeAuthError(message: string): Feedback {
+  const m = (message || '').toLowerCase();
+
+  if (m.includes('weak') || m.includes('known to be') || m.includes('easy to guess') || m.includes('common password') || m.includes('hibp')) {
+    return {
+      title: 'Please choose a different password',
+      detail: "This password has appeared in a known data breach. For your security, please create a unique password that you haven't used before.",
+    };
+  }
+  if (m.includes('at least') && m.includes('character')) {
+    return {
+      title: 'Your password is too short',
+      detail: 'Please use a longer password, at least 6 characters, that you have not used anywhere else.',
+    };
+  }
+  if (m.includes('invalid login credentials') || m.includes('invalid email or password')) {
+    return {
+      title: 'We could not match that email and password',
+      detail: 'Check for a typo, or use the email you signed up with. Forgot it? Ask for a new password from the login screen.',
+    };
+  }
+  if (m.includes('email not confirmed') || m.includes('not confirmed')) {
+    return {
+      title: 'Please confirm your email first',
+      detail: 'We sent a confirmation link when you created your account. Open that email and click the link, then log in here.',
+    };
+  }
+  if (m.includes('already registered') || m.includes('already exists') || m.includes('already been registered')) {
+    return {
+      title: 'This email already has an account',
+      detail: 'Switch to the Login tab to sign in, or use a different email to create a new account.',
+    };
+  }
+  if (m.includes('invalid email') || m.includes('validate email') || m.includes('email address is invalid')) {
+    return {
+      title: 'That email address does not look right',
+      detail: 'Please enter a full address such as you@byu.edu.',
+    };
+  }
+  if (m.includes('rate limit') || m.includes('too many') || m.includes('try again later') || m.includes('for security')) {
+    return {
+      title: 'Too many attempts for now',
+      detail: 'Please wait a few minutes and try again. If it keeps happening, we can help you reset your password.',
+    };
+  }
+  if (m.includes('signups not allowed') || m.includes('signup not allowed')) {
+    return {
+      title: 'New accounts are closed right now',
+      detail: 'Please log in with an existing account, or check back later.',
+    };
+  }
+  if (m.includes('failed to fetch') || m.includes('networkerror') || m.includes('load failed')) {
+    return {
+      title: 'We could not reach the server',
+      detail: 'Check your internet connection and try again. Nothing was saved from this attempt.',
+    };
+  }
+
+  return {
+    title: 'Something went wrong',
+    detail: message || 'Please try again. If it keeps happening, let us know and we will fix it.',
+  };
+}
+
 function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
