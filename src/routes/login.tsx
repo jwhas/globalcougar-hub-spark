@@ -27,7 +27,7 @@ function describeAuthError(message: string): Feedback {
   if (m.includes('invalid login credentials') || m.includes('invalid email or password')) {
     return {
       title: 'We could not match that email and password',
-      detail: 'Check for a typo, or use the email you signed up with. Forgot it? Ask for a new password from the login screen.',
+      detail: 'Check for a typo, or use the email you signed up with. New here? Open the Begin tab to create an account.',
     };
   }
   if (m.includes('email not confirmed') || m.includes('not confirmed')) {
