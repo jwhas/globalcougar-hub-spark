@@ -17,7 +17,7 @@ type Milestone = {
   status: string;
   completed_date: string | null;
   milestone_id: number;
-  MILESTONE: {
+  milestone: {
     title: string;
     office_location: string;
     required_documents: string;
@@ -40,10 +40,10 @@ function Index() {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('USER_MILESTONE')
-        .select('id, status, completed_date, milestone_id, MILESTONE(title, office_location, required_documents, phase, step_order, is_checkpoint), USER!inner(name)')
-        .eq('USER.name', studentName)
-        .order('step_order', { ascending: true, foreignTable: 'MILESTONE' });
+        .from('user_milestone')
+        .select('id, status, completed_date, milestone_id, milestone(title, office_location, required_documents, phase, step_order, is_checkpoint), student!inner(name)')
+        .eq('student.name', studentName)
+        .order('step_order', { ascending: true, foreignTable: 'milestone' });
 
       if (error) {
         setDbError(error.message);
@@ -110,7 +110,7 @@ function Index() {
     );
 
     const { error } = await supabase
-      .from('USER_MILESTONE')
+      .from('user_milestone')
       .update({ status: nextStatus, completed_date: nextDate })
       .eq('id', recordId);
 
@@ -193,7 +193,7 @@ function Index() {
                 <div key={item.id} className="w-64 shrink-0 gap-2 p-2 bg-slate-50 border border-gray-200 rounded-lg flex flex-col justify-between sm:p-3">
                   <div className="min-w-0 flex-1 mb-2">
                     <p className="text-[11px] font-bold text-gray-900 sm:text-xs line-clamp-2">
-                      {item.MILESTONE?.title ?? `Milestone #${item.milestone_id}`}
+                      {item.milestone?.title ?? `Milestone #${item.milestone_id}`}
                     </p>
                   </div>
                   <button
