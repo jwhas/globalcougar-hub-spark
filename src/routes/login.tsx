@@ -80,7 +80,7 @@ function AuthPage() {
   const [name, setName] = useState('');
   const [country, setCountry] = useState('');
   const [selectedHelpTopics, setSelectedHelpTopics] = useState<string[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Feedback | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -101,20 +101,34 @@ function AuthPage() {
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!email || !password || (!isLogin && (!name || !country || selectedHelpTopics.length === 0))) {
-      setError("Please fill in all required fields and select at least one interest.");
+
+    const missing: string[] = [];
+    if (!isLogin) {
+      if (!name.trim()) missing.push('your full name');
+      if (!country.trim()) missing.push('your home country');
+      if (selectedHelpTopics.length === 0) missing.push('at least one interest');
+    }
+    if (!email.trim()) missing.push('your email');
+    if (!password) missing.push('a password');
+
+    if (missing.length > 0) {
+      setError({
+        title: 'Please finish these first',
+        detail: `Still needed: ${missing.join(', ')}.`,
+      });
       return;
     }
+
     setLoading(true);
     if (isLogin) {
       const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
-      if (authError) setError(authError.message);
+      if (authError) setError(describeAuthError(authError.message));
       else navigate({ to: '/' });
     } else {
       const { error: authError } = await supabase.auth.signUp({
         email, password, options: { data: { full_name: name, country, help_topics: selectedHelpTopics } }
       });
-      if (authError) setError(authError.message);
+      if (authError) setError(describeAuthError(authError.message));
       else navigate({ to: '/' });
     }
     setLoading(false);
@@ -236,8 +250,9 @@ function AuthPage() {
             </div>
 
             {error && (
-              <div className="text-red-600 text-sm font-bold bg-red-50 p-3 rounded-lg border border-red-100">
-                {error}
+              <div role="alert" className="text-sm bg-red-50 p-4 rounded-lg border border-red-200">
+                <div className="font-bold text-red-700 mb-1">{error.title}</div>
+                <div className="text-red-600 leading-relaxed">{error.detail}</div>
               </div>
             )}
 
