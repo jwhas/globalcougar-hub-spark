@@ -139,6 +139,41 @@ export type Database = {
         }
         Relationships: []
       }
+      personal_journey_tasks: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          description: string
+          id: string
+          status: string
+          steps: Json
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          status?: string
+          steps?: Json
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          status?: string
+          steps?: Json
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       milestone: {
         Row: {
           description: string
