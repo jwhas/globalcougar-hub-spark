@@ -170,12 +170,6 @@ function Index() {
               <div className="shrink-0 whitespace-nowrap text-[10px] font-semibold px-2 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200 sm:px-2.5 sm:text-xs">
                 Completed: {completedCount} / {milestones.length}
               </div>
-              <button 
-                onClick={handleLogout}
-                className="text-xs text-red-600 hover:text-red-800 font-semibold px-2 py-1 border border-red-200 rounded bg-red-50"
-              >
-                Log Out
-              </button>
             </div>
           </div>
 

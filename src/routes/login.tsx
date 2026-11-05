@@ -1,5 +1,15 @@
 import { useState } from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { Check, ChevronsUpDown } from 'lucide-react';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
 
 export const Route = createFileRoute('/login')({
@@ -7,6 +17,12 @@ export const Route = createFileRoute('/login')({
 });
 
 type Feedback = { title: string; detail: string };
+
+const countryDisplayNames = new Intl.DisplayNames(['en'], { type: 'region' });
+const homeCountries = 'AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BV BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW'
+  .split(' ')
+  .map((code) => countryDisplayNames.of(code) ?? code)
+  .sort((a, b) => a.localeCompare(b));
 
 // Turn the raw text the auth server returns into wording a student can act on.
 function describeAuthError(message: string): Feedback {
@@ -79,6 +95,7 @@ function AuthPage() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [country, setCountry] = useState('');
+  const [countryOpen, setCountryOpen] = useState(false);
   const [selectedHelpTopics, setSelectedHelpTopics] = useState<string[]>([]);
   const [error, setError] = useState<Feedback | null>(null);
   const [loading, setLoading] = useState(false);
@@ -195,14 +212,49 @@ function AuthPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">Select Your Home Country</label>
-                  <input
-                    type="text"
-                    value={country}
-                    onChange={(e) => setCountry(e.target.value)}
-                    placeholder="Search countries..."
-                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#003366] outline-none"
-                  />
+                  <label htmlFor="home-country" className="block text-sm font-bold text-gray-700 mb-2">Select Your Home Country</label>
+                  <Popover open={countryOpen} onOpenChange={setCountryOpen}>
+                    <PopoverTrigger asChild>
+                      <button
+                        id="home-country"
+                        type="button"
+                        role="combobox"
+                        aria-expanded={countryOpen}
+                        className="w-full flex items-center justify-between px-4 py-3 bg-white border border-gray-200 rounded-lg text-left focus:ring-2 focus:ring-[#003366] outline-none"
+                      >
+                        <span className={country ? 'text-gray-900' : 'text-gray-400'}>
+                          {country || 'Choose or search for a country...'}
+                        </span>
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-gray-500" aria-hidden="true" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Type to filter countries..." />
+                        <CommandList>
+                          <CommandEmpty>No country found.</CommandEmpty>
+                          <CommandGroup>
+                            {homeCountries.map((homeCountry) => (
+                              <CommandItem
+                                key={homeCountry}
+                                value={homeCountry}
+                                onSelect={() => {
+                                  setCountry(homeCountry);
+                                  setCountryOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={`mr-2 h-4 w-4 ${country === homeCountry ? 'opacity-100' : 'opacity-0'}`}
+                                  aria-hidden="true"
+                                />
+                                {homeCountry}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 <div>
