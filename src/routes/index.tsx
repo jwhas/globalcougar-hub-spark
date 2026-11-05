@@ -103,7 +103,6 @@ function Index() {
     };
   }, [fetchMilestones, navigate]);
 
-  // Saves unique completion status and timestamp directly to Supabase for the user
   const toggleMilestone = async (recordId: number, currentStatus: string) => {
     const nextStatus = currentStatus === 'completed' ? 'pending' : 'completed';
     const nextDate: string | null = nextStatus === 'completed' ? new Date().toISOString().slice(0, 10) : null;
@@ -142,21 +141,6 @@ function Index() {
   const completedCount = milestones.filter((m) => m.status === 'completed').length;
 
   return (
-<<<<<<< HEAD
-    <div className="flex flex-col h-screen w-full bg-slate-100">
-      <section className="bg-white border-b border-gray-200 px-3 py-2 shadow-sm z-10 sm:px-6 sm:py-4 shrink-0">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between gap-2 pb-2 border-b border-gray-100 sm:pb-3">
-            <div className="min-w-0">
-              <h1 className="text-sm font-bold text-gray-900 sm:text-base">
-                Checkpoints for {currentUser}
-              </h1>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="shrink-0 whitespace-nowrap text-[10px] font-semibold px-2 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200 sm:px-2.5 sm:text-xs">
-                Completed: {completedCount} / {milestones.length}
-              </div>
-=======
     <div className="flex flex-col h-screen w-full bg-slate-100 overflow-hidden">
       <section className="bg-white border-b border-gray-200 px-3 py-2 shadow-sm z-10 sm:px-6 sm:py-3 shrink-0">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
@@ -166,7 +150,6 @@ function Index() {
             </h1>
             <div className="shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200">
               Completed: {completedCount} / {milestones.length}
->>>>>>> 7871c7e (Persist unique user completion dates to Supabase USER_MILESTONE)
             </div>
           </div>
           
