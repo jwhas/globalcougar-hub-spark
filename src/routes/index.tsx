@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 
@@ -37,6 +37,8 @@ function Index() {
   const [dbError, setDbError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<string>('Jacob');
   const [frameQuery, setFrameQuery] = useState<string>('');
+  const [accessToken, setAccessToken] = useState<string>('');
+  const frameRef = useRef<HTMLIFrameElement>(null);
   const navigate = useNavigate();
 
   const fetchMilestones = useCallback(async (studentName: string) => {
@@ -65,7 +67,14 @@ function Index() {
 
     const enforceAuth = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: { session: existingSession }, error } = await supabase.auth.getSession();
+        let session = existingSession;
+
+        if (session && session.expires_at && session.expires_at * 1000 <= Date.now() + 60_000) {
+          const refreshed = await supabase.auth.refreshSession();
+          session = refreshed.data.session;
+          if (refreshed.error) throw refreshed.error;
+        }
 
         if (!active) return;
         if (error || !session) {
@@ -76,6 +85,7 @@ function Index() {
 
         const name = session.user.user_metadata?.['full_name'] || session.user.email?.split('@')[0] || 'Jacob';
         setCurrentUser(name);
+        setAccessToken(session.access_token);
         
         const meta = session.user.user_metadata ?? {};
         const qs = new URLSearchParams({ v: '9', user: name });
@@ -92,10 +102,19 @@ function Index() {
     };
 
     void enforceAuth();
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) setAccessToken(session.access_token);
+    });
     return () => {
       active = false;
+      authListener.subscription.unsubscribe();
     };
   }, [fetchMilestones, navigate]);
+
+  useEffect(() => {
+    if (!accessToken || !frameRef.current?.contentWindow) return;
+    frameRef.current.contentWindow.postMessage({ type: 'gc-auth', accessToken }, window.location.origin);
+  }, [accessToken, frameQuery]);
 
   const toggleMilestone = async (recordId: number, currentStatus: string) => {
     const nextStatus = currentStatus === 'completed' ? 'pending' : 'completed';
@@ -124,13 +143,20 @@ function Index() {
 
   useEffect(() => {
     const handleMessage = (e: MessageEvent) => {
+      if (e.data?.type === 'gc-auth-request' && e.source === frameRef.current?.contentWindow) {
+        void supabase.auth.getSession().then(({ data }) => {
+          const token = data.session?.access_token || accessToken;
+          if (token) e.source?.postMessage({ type: 'gc-auth', accessToken: token }, window.location.origin);
+        });
+        return;
+      }
       if (e.data?.type === 'gc-logout') {
         void handleLogout();
       }
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, []);
+  }, [accessToken]);
 
   const completedCount = milestones.filter((m) => m.status === 'completed').length;
 
@@ -167,8 +193,14 @@ function Index() {
 
       {frameQuery && (
         <iframe 
+          ref={frameRef}
           title="GlobalCougar prototype" 
           src={`/globalcougar.html?${frameQuery}`} 
+          onLoad={() => {
+            if (accessToken && frameRef.current?.contentWindow) {
+              frameRef.current.contentWindow.postMessage({ type: 'gc-auth', accessToken }, window.location.origin);
+            }
+          }}
           className="min-h-0 min-w-0 flex-1 w-full border-0 bg-white" 
         />
       )}
