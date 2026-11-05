@@ -40,7 +40,6 @@ function Index() {
   const navigate = useNavigate();
 
   const fetchMilestones = useCallback(async (studentName: string) => {
-    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('USER_MILESTONE')
@@ -69,12 +68,7 @@ function Index() {
         const { data: { session }, error } = await supabase.auth.getSession();
 
         if (!active) return;
-        if (error) {
-          setDbError(`Could not verify your session: ${error.message}`);
-          setLoading(false);
-          return;
-        }
-        if (!session) {
+        if (error || !session) {
           setLoading(false);
           void navigate({ to: '/login' });
           return;
@@ -92,8 +86,8 @@ function Index() {
         await fetchMilestones(name);
       } catch (error) {
         if (!active) return;
-        setDbError(error instanceof Error ? error.message : 'Could not verify your session.');
         setLoading(false);
+        void navigate({ to: '/login' });
       }
     };
 
@@ -139,6 +133,10 @@ function Index() {
   }, []);
 
   const completedCount = milestones.filter((m) => m.status === 'completed').length;
+
+  if (loading) {
+    return <div className="flex h-screen items-center justify-center bg-slate-100 text-sm text-gray-500">Loading GlobalCougar...</div>;
+  }
 
   return (
     <div className="flex flex-col h-screen w-full bg-slate-100 overflow-hidden">
