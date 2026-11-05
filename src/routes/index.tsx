@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { supabase } from '@/integrations/supabase/client';
 
-
 export const Route = createFileRoute('/')({
   head: () => ({
     meta: [
@@ -18,7 +17,7 @@ type Milestone = {
   status: string;
   completed_date: string | null;
   milestone_id: number;
-  MILESTONE: {
+  milestone: {
     title: string;
     office_location: string;
     required_documents: string;
@@ -34,17 +33,17 @@ function Index() {
   const [dbError, setDbError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<string>('Student');
   const [frameQuery, setFrameQuery] = useState<string>('');
-  const [accessToken, setAccessToken] = useState<string>('');
-  const frameRef = useRef<HTMLIFrameElement>(null);
   const navigate = useNavigate();
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const fetchMilestones = useCallback(async (studentName: string) => {
+    setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('USER_MILESTONE')
-        .select('id, status, completed_date, milestone_id, MILESTONE(title, office_location, required_documents, phase, step_order, is_checkpoint), USER!inner(name)')
-        .eq('USER.name', studentName)
-        .order('step_order', { ascending: true, foreignTable: 'MILESTONE' });
+        .from('user_milestone')
+        .select('id, status, completed_date, milestone_id, milestone(title, office_location, required_documents, phase, step_order, is_checkpoint), student!inner(name)')
+        .eq('student.name', studentName)
+        .order('step_order', { ascending: true, foreignTable: 'milestone' });
 
       if (error) {
         setDbError(error.message);
@@ -64,17 +63,15 @@ function Index() {
 
     const enforceAuth = async () => {
       try {
-        const { data: { session: existingSession }, error } = await supabase.auth.getSession();
-        let session = existingSession;
-
-        if (session && session.expires_at && session.expires_at * 1000 <= Date.now() + 60_000) {
-          const refreshed = await supabase.auth.refreshSession();
-          session = refreshed.data.session;
-          if (refreshed.error) throw refreshed.error;
-        }
+        const { data: { session }, error } = await supabase.auth.getSession();
 
         if (!active) return;
-        if (error || !session) {
+        if (error) {
+          setDbError(`Could not verify your session: ${error.message}`);
+          setLoading(false);
+          return;
+        }
+        if (!session) {
           setLoading(false);
           void navigate({ to: '/login' });
           return;
@@ -82,10 +79,10 @@ function Index() {
 
         const name = session.user.user_metadata?.['full_name'] || session.user.email?.split('@')[0] || 'Student';
         setCurrentUser(name);
-        setAccessToken(session.access_token);
         
+        // Restore iframe URL parameters for the prototype
         const meta = session.user.user_metadata ?? {};
-        const qs = new URLSearchParams({ v: '9', user: name });
+        const qs = new URLSearchParams({ v: '12', home: '1' });
         if (meta['country']) qs.set('country', String(meta['country']));
         if (Array.isArray(meta['help_topics'])) qs.set('interests', meta['help_topics'].join('|'));
         setFrameQuery(qs.toString());
@@ -93,25 +90,16 @@ function Index() {
         await fetchMilestones(name);
       } catch (error) {
         if (!active) return;
+        setDbError(error instanceof Error ? error.message : 'Could not verify your session.');
         setLoading(false);
-        void navigate({ to: '/login' });
       }
     };
 
     void enforceAuth();
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) setAccessToken(session.access_token);
-    });
     return () => {
       active = false;
-      authListener.subscription.unsubscribe();
     };
   }, [fetchMilestones, navigate]);
-
-  useEffect(() => {
-    if (!accessToken || !frameRef.current?.contentWindow) return;
-    frameRef.current.contentWindow.postMessage({ type: 'gc-auth', accessToken }, window.location.origin);
-  }, [accessToken, frameQuery]);
 
   const toggleMilestone = async (recordId: number, currentStatus: string) => {
     const nextStatus = currentStatus === 'completed' ? 'pending' : 'completed';
@@ -122,81 +110,108 @@ function Index() {
     );
 
     const { error } = await supabase
-      .from('USER_MILESTONE')
+      .from('user_milestone')
       .update({ status: nextStatus, completed_date: nextDate })
       .eq('id', recordId);
 
     if (error) {
       console.error('Update failed:', error.message);
-      setDbError(`Could not update completion date: ${error.message}`);
+      setDbError(`Could not update checkpoint: ${error.message}`);
       await fetchMilestones(currentUser);
     }
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
+  const handleLogout = useCallback(async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      setDbError(`Could not log out: ${error.message}`);
+      return;
+    }
     void navigate({ to: '/login' });
-  };
+  }, [navigate]);
+
+  const syncPrototypeUser = useCallback(() => {
+    iframeRef.current?.contentWindow?.postMessage(
+      { type: 'gc-user', name: currentUser },
+      window.location.origin
+    );
+  }, [currentUser]);
 
   useEffect(() => {
-    const handleMessage = (e: MessageEvent) => {
-      if (e.data?.type === 'gc-auth-request' && e.source === frameRef.current?.contentWindow) {
-        void supabase.auth.getSession().then(({ data }) => {
-          const token = data.session?.access_token || accessToken;
-          if (token) e.source?.postMessage({ type: 'gc-auth', accessToken: token }, window.location.origin);
-        });
+    const handlePrototypeMessage = (event: MessageEvent) => {
+      if (
+        event.origin !== window.location.origin ||
+        event.source !== iframeRef.current?.contentWindow ||
+        event.data?.type !== 'gc-logout'
+      ) {
         return;
       }
-      if (e.data?.type === 'gc-logout') {
-        void handleLogout();
-      }
+
+      void handleLogout();
     };
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [accessToken]);
+
+    window.addEventListener('message', handlePrototypeMessage);
+    return () => window.removeEventListener('message', handlePrototypeMessage);
+  }, [handleLogout]);
 
   const completedCount = milestones.filter((m) => m.status === 'completed').length;
-  if (loading) {
-    return <div className="flex h-screen items-center justify-center bg-slate-100 text-sm text-gray-500">Loading GlobalCougar...</div>;
-  }
 
   return (
-    <div className="flex flex-col h-screen w-full bg-slate-100 overflow-hidden">
-      <section className="bg-white border-b border-gray-200 px-3 py-2 shadow-sm z-10 sm:px-6 sm:py-3 shrink-0">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4 min-w-0">
-            <h1 className="text-sm font-bold text-gray-900 truncate">
-              Checkpoints for {currentUser}
-            </h1>
-            <div className="shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200">
-              Completed: {completedCount} / {milestones.length}
+    <div className="flex flex-col h-screen w-full bg-slate-100">
+      <section className="bg-white border-b border-gray-200 px-3 py-2 shadow-sm z-10 sm:px-6 sm:py-4 shrink-0">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between gap-2 pb-2 border-b border-gray-100 sm:pb-3">
+            <div className="min-w-0">
+              <h1 className="text-sm font-bold text-gray-900 sm:text-base">
+                Checkpoints for {currentUser}
+              </h1>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="shrink-0 whitespace-nowrap text-[10px] font-semibold px-2 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200 sm:px-2.5 sm:text-xs">
+                Completed: {completedCount} / {milestones.length}
+              </div>
             </div>
           </div>
-          
-          <div className="flex items-center gap-3">
-            {dbError && (
-              <span className="text-xs text-red-600 truncate max-w-xs">{dbError}</span>
-            )}
-            <button 
-              onClick={handleLogout}
-              className="text-xs text-red-600 hover:text-red-800 font-semibold px-3 py-1.5 border border-red-200 rounded-lg bg-red-50 transition-colors shrink-0"
-            >
-              Log Out
-            </button>
-          </div>
+
+          {loading ? (
+            <p className="text-xs text-gray-400 py-3">Connecting...</p>
+          ) : dbError ? (
+            <p className="text-xs text-red-600 font-semibold py-3">Error: {dbError}</p>
+          ) : milestones.length === 0 ? (
+            <p className="text-xs text-gray-500 py-3">
+              No checkpoints are assigned to this account yet.
+            </p>
+          ) : (
+            <div className="flex gap-2 sm:gap-3 pt-2 sm:pt-3 overflow-x-auto pb-2 scrollbar-thin">
+              {milestones.map((item) => (
+                <div key={item.id} className="w-64 shrink-0 gap-2 p-2 bg-slate-50 border border-gray-200 rounded-lg flex flex-col justify-between sm:p-3">
+                  <div className="min-w-0 flex-1 mb-2">
+                    <p className="text-[11px] font-bold text-gray-900 sm:text-xs line-clamp-2">
+                      {item.milestone?.title ?? `Milestone #${item.milestone_id}`}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => toggleMilestone(item.id, item.status)}
+                    className={`w-full px-2 py-1 rounded text-[10px] font-semibold transition-colors sm:px-3 sm:py-1.5 sm:text-xs ${
+                      item.status === 'completed' ? 'bg-emerald-600 text-white' : 'bg-white text-gray-700 border border-gray-300'
+                    }`}
+                  >
+                    {item.status === 'completed' ? '✓ Completed' : 'Mark Complete'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
+      {/* Restores the iframe for your main website prototype */}
       {frameQuery && (
         <iframe 
-          ref={frameRef}
+          ref={iframeRef}
+          onLoad={syncPrototypeUser}
           title="GlobalCougar prototype" 
           src={`/globalcougar.html?${frameQuery}`} 
-          onLoad={() => {
-            if (accessToken && frameRef.current?.contentWindow) {
-              frameRef.current.contentWindow.postMessage({ type: 'gc-auth', accessToken }, window.location.origin);
-            }
-          }}
           className="min-h-0 min-w-0 flex-1 w-full border-0 bg-white" 
         />
       )}
