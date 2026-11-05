@@ -155,6 +155,7 @@ function Index() {
   }, [handleLogout]);
 
   const completedCount = milestones.filter((m) => m.status === 'completed').length;
+  const firstName = currentUser.trim().split(/\s+/)[0] || 'Student';
 
   return (
     <div className="flex flex-col h-screen w-full bg-slate-100">
@@ -163,7 +164,7 @@ function Index() {
           <div className="flex items-center justify-between gap-2 pb-2 border-b border-gray-100 sm:pb-3">
             <div className="min-w-0">
               <h1 className="text-sm font-bold text-gray-900 sm:text-base">
-                Checkpoints for {currentUser}
+                Checkpoints for {firstName}
               </h1>
             </div>
             <div className="flex items-center gap-3">
