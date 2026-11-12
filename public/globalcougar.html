@@ -224,6 +224,17 @@
       {date:'08/17/26',cat:'Travel & Arrival',interests:['Travel & Arrival'],priority:'Arrival Tips',tone:'gold',title:'Plan Your Arrival in the Provo Area',body:'Review airport transportation options and keep your admission and immigration documents accessible while traveling.'},
       {date:'08/16/26',cat:'Community',interests:['Community & Student Groups','Campus Life & Events'],priority:'Community',tone:'green',title:'Find Your International Student Community',body:'Explore student groups and upcoming events to meet students with shared interests and experiences.'}
     ];
+    const interestCategoryMap={
+      'Immigration & Visa':['Legal / Visa'],
+      'Academics & Deadlines':['Deadlines'],
+      'Career & Internships':['Career / ISSS'],
+      'Scholarships & Financial Aid':['Scholarships'],
+      'Campus Life & Events':['Campus Life'],
+      'Housing & Life in Provo':['Housing'],
+      'Health & Wellness':['Health & Wellness'],
+      'Travel & Arrival':['Travel & Arrival'],
+      'Community & Student Groups':['Community']
+    };
     const phaseNames=['Before Arriving in the U.S.','After Arriving in the U.S.','Starting at BYU'];
     const lifeCategories=['Housing & Daily Essentials','Communication & Transportation','Money & Banking','Campus & Community'];
     const terms={'Fall 2026':{},'Winter 2027':{classes:'2027-01-06',end:'2027-04-21',tuition:'2026-12-30',orientation:'January 4–5, 2027',addDrop:'2027-01-13',registration:'2026-10-19'},'Spring 2027':{},'Summer 2027':{}};
@@ -338,7 +349,25 @@
     document.getElementById('continueBtn').onclick=()=>{state.country=document.getElementById('country').value;const note=document.getElementById('onboardingNote');const missing=[];if(!state.country)missing.push('your home country');if(!state.interests.size){missing.push('at least one interest');state.interestError=true}if(missing.length){note.textContent='Please select '+missing.join(' and ')+' to continue.';renderInterests();if(!state.interests.size){const f=document.getElementById('interestField');f.classList.add('shake');setTimeout(()=>f.classList.remove('shake'),500);f.scrollIntoView({behavior:'smooth',block:'center'})}return}note.textContent='';showScreen(2);toast('Your preferences were saved')};
     function renderDashboard(){document.getElementById('dashboardGreeting').textContent=`Good afternoon, ${firstName}.`;const prefix=state.country?`Welcome from ${state.country}, ${firstName}. `:'';document.getElementById('personalWelcome').textContent=prefix+"Here’s what’s happening in your BYU journey.";document.getElementById('dashboardGrid').innerHTML=features.map(([icon,title,sub,n])=>`<button data-screen="${n}" class="feature-card group flex min-h-48 flex-col rounded-lg border border-slate-200 bg-white p-6 text-left shadow-card"><span class="icon-box grid h-12 w-12 place-items-center rounded-md bg-byu-sky text-lg font-black text-byu-navy">${icon}</span><h3 class="mt-5 text-lg font-bold text-byu-navy">${title}</h3><p class="mt-1 text-sm leading-relaxed text-slate-500">${sub}</p><span class="mt-auto pt-5 text-sm font-bold text-byu-royal">Open resource →</span></button>`).join('');const p=progressFor(coreTasks);document.getElementById('progressText').textContent=`${p.done} of 14`;document.getElementById('progressBar').style.width=p.percent+'%';}
 
-    function renderUpdates(){const categories=[...new Set(updates.map(update=>update.cat))];const filters=['For You','All',...categories];document.getElementById('updateFilters').innerHTML=filters.map(filter=>`<button data-filter="${filter}" class="rounded-full border px-4 py-2 text-sm font-bold ${state.updateFilter===filter?'border-byu-navy bg-byu-navy text-white':'border-slate-300 bg-white text-slate-600'}">${filter}</button>`).join('');const list=updates.filter(update=>state.updateFilter==='For You'||state.updateFilter==='All'||update.cat===state.updateFilter).map((update,index)=>({update,index,matches:update.interests.filter(interest=>state.interests.has(interest)).length})).sort((a,b)=>(b.update.priority==='High Priority')-(a.update.priority==='High Priority')||(state.updateFilter==='For You'?b.matches-a.matches:0)||a.index-b.index).map(item=>item.update);const tone={rose:'bg-rose-50 text-rose-700 border-rose-200',blue:'bg-blue-50 text-blue-700 border-blue-200',green:'bg-emerald-50 text-emerald-700 border-emerald-200',gold:'bg-amber-50 text-amber-800 border-amber-200'};document.getElementById('updatesFeed').innerHTML=list.map(u=>`<article class="rounded-lg border border-slate-200 bg-white p-6 shadow-card"><div class="flex flex-wrap items-center gap-2"><time class="text-xs font-bold text-slate-500">${u.date}</time><span class="rounded-full border px-2.5 py-1 text-xs font-bold ${tone[u.tone]}">${u.priority}</span></div><h2 class="mt-4 text-xl font-bold text-byu-navy">${u.title}</h2><p class="mt-2 leading-relaxed text-slate-600">${u.body}</p><button class="mt-5 text-sm font-bold text-byu-royal hover:underline" onclick="toast('Full announcement opened')">Read full announcement →</button></article>`).join('')||'<p class="py-12 text-center text-slate-500">No updates in this category.</p>'}document.getElementById('updateFilters').onclick=e=>{const b=e.target.closest('[data-filter]');if(!b)return;state.updateFilter=b.dataset.filter;renderUpdates()};renderUpdates();
+    function updateDateValue(date){const[month,day,year]=date.split('/').map(Number);return Date.UTC(2000+year,month-1,day)}
+    function matchesSelectedInterest(update){return[...state.interests].some(interest=>{const categories=interestCategoryMap[interest]||[];return update.interests.includes(interest)||categories.includes(update.cat)||categories.includes(update.priority)})}
+    function renderUpdates(){
+      const categories=[...new Set(updates.map(update=>update.cat))];
+      const filters=['For You','All',...categories];
+      document.getElementById('updateFilters').innerHTML=filters.map(filter=>`<button data-filter="${filter}" class="rounded-full border px-4 py-2 text-sm font-bold ${state.updateFilter===filter?'border-byu-navy bg-byu-navy text-white':'border-slate-300 bg-white text-slate-600'}">${filter}</button>`).join('');
+      const list=state.updateFilter==='For You'
+        ?updates.filter(matchesSelectedInterest).sort((a,b)=>updateDateValue(b.date)-updateDateValue(a.date))
+        :updates.filter(update=>state.updateFilter==='All'||update.cat===state.updateFilter).map((update,index)=>({update,index})).sort((a,b)=>(b.update.priority==='High Priority')-(a.update.priority==='High Priority')||a.index-b.index).map(item=>item.update);
+      const tone={rose:'bg-rose-50 text-rose-700 border-rose-200',blue:'bg-blue-50 text-blue-700 border-blue-200',green:'bg-emerald-50 text-emerald-700 border-emerald-200',gold:'bg-amber-50 text-amber-800 border-amber-200'};
+      const emptyMessage=state.updateFilter==='For You'
+        ?state.interests.size
+          ?'No announcements match your selected interests yet. Try All or another category.'
+          :'You have no interests saved for this account. Select interests during account registration to personalize your feed.'
+        :'No updates in this category.';
+      document.getElementById('updatesFeed').innerHTML=list.map(u=>`<article class="rounded-lg border border-slate-200 bg-white p-6 shadow-card"><div class="flex flex-wrap items-center gap-2"><time class="text-xs font-bold text-slate-500">${u.date}</time><span class="rounded-full border px-2.5 py-1 text-xs font-bold ${tone[u.tone]}">${u.priority}</span></div><h2 class="mt-4 text-xl font-bold text-byu-navy">${u.title}</h2><p class="mt-2 leading-relaxed text-slate-600">${u.body}</p><button class="mt-5 text-sm font-bold text-byu-royal hover:underline" onclick="toast('Full announcement opened')">Read full announcement →</button></article>`).join('')||`<p class="py-12 text-center text-slate-500">${emptyMessage}</p>`;
+    }
+    document.getElementById('updateFilters').onclick=e=>{const b=e.target.closest('[data-filter]');if(!b)return;state.updateFilter=b.dataset.filter;renderUpdates()};
+    renderUpdates();
 
     const threads=[['Best grocery stores for Asian spices in Orem','Mina K. · 14 replies'],['Winter coats recommendations','Paulo R. · 9 replies']];document.getElementById('forumThreads').innerHTML=threads.map(t=>`<button class="flex w-full items-center justify-between gap-3 py-4 text-left hover:text-byu-royal"><span><strong class="block text-sm text-byu-navy">${t[0]}</strong><small class="text-slate-500">${t[1]}</small></span><span>→</span></button>`).join('');document.getElementById('newDiscussion').onclick=()=>{state.career='discussion';state.thread=null;showScreen(8);renderCareer();void syncDisc();setTimeout(()=>document.getElementById('careerContent').scrollIntoView({behavior:'smooth'}),300)};
 
@@ -378,7 +407,7 @@
     void syncDisc();
   void syncJourney();
     window.addEventListener('message',event=>{if(event.origin!==location.origin||event.source!==window.parent||event.data?.type!=='gc-user'||typeof event.data.name!=='string')return;applyProfileName(event.data.name);initialChat[0][1]=`Welcome to GlobalCougar, ${firstName}! I’m glad you’re here. Ask me anything about getting settled at BYU, campus life, your arrival journey, or finding the right office—I’m here to help you feel at home.`;renderChat();renderDashboard()});
-    (function(){const c=queryParams.get('country');const i=queryParams.get('interests');const openHome=queryParams.get('home')==='1';if(!c&&!i&&!openHome)return;state.country=c||'';if(i)state.interests=new Set(i.split('|').filter(x=>interestOptions.includes(x)));try{const sel=document.getElementById('country');if(sel)sel.value=state.country}catch(e){}renderInterests();showScreen(2);document.getElementById('logoutButton').onclick=()=>window.parent.postMessage({type:'gc-logout'},location.origin);})();
+    (function(){const c=queryParams.get('country');const i=queryParams.get('interests');const hasInterests=queryParams.has('interests');const openHome=queryParams.get('home')==='1';if(!c&&!hasInterests&&!openHome)return;state.country=c||'';if(hasInterests)state.interests=new Set((i||'').split('|').filter(x=>interestOptions.includes(x)));try{const sel=document.getElementById('country');if(sel)sel.value=state.country}catch(e){}renderInterests();showScreen(2);document.getElementById('logoutButton').onclick=()=>window.parent.postMessage({type:'gc-logout'},location.origin);})();
 </script>
 </body>
 </html>
