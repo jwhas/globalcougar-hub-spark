@@ -43,7 +43,13 @@ function Index() {
         const meta = session.user.user_metadata ?? {};
         const qs = new URLSearchParams({ v: '12', home: '1' });
         if (meta['country']) qs.set('country', String(meta['country']));
-        if (Array.isArray(meta['help_topics'])) qs.set('interests', meta['help_topics'].join('|'));
+        const helpTopics = meta['help_topics'];
+        qs.set(
+          'interests',
+          Array.isArray(helpTopics)
+            ? helpTopics.filter((topic): topic is string => typeof topic === 'string').join('|')
+            : '',
+        );
         setFrameQuery(qs.toString());
       } catch (error) {
         if (!active) return;
