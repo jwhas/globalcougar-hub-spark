@@ -3,6 +3,7 @@ const WINDOW_MS = 60_000;
 const MAX_REQUESTS_PER_WINDOW = 8;
 const MAX_BODY_BYTES = 24_000;
 const MAX_MESSAGE_CHARS = 2_000;
+const MAX_ASSISTANT_MESSAGE_CHARS = 8_000;
 const requestLog = new Map<string, number[]>();
 
 const corsHeaders = {
@@ -83,7 +84,10 @@ function parseMessages(payload: unknown) {
     !["user", "assistant"].includes((item as { role?: unknown }).role as string) ||
     typeof (item as { content?: unknown }).content !== "string" ||
     !(item as { content: string }).content.trim() ||
-    (item as { content: string }).content.length > MAX_MESSAGE_CHARS
+    (item as { content: string }).content.length >
+      ((item as { role: "user" | "assistant" }).role === "assistant"
+        ? MAX_ASSISTANT_MESSAGE_CHARS
+        : MAX_MESSAGE_CHARS)
   )) return null;
   return messages.map((item) => ({
     role: (item as { role: "user" | "assistant" }).role,
