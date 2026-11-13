@@ -1,4 +1,4 @@
-const MODEL = "openrouter/free";
+const MODEL = "nvidia/nemotron-3.5-super-vl:free";
 const WINDOW_MS = 60_000;
 const MAX_REQUESTS_PER_WINDOW = 8;
 const MAX_BODY_BYTES = 24_000;
