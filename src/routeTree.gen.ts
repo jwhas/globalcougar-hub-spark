@@ -11,8 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ApiPublicAnnouncementsRouteImport } from './routes/api/public/announcements'
 import { Route as ApiPublicDiscussionsRouteImport } from './routes/api/public/discussions'
 import { Route as ApiPublicJourneyRouteImport } from './routes/api/public/journey'
+import { Route as ApiAdminAnnouncementsSyncRouteImport } from './routes/api/admin/announcements/sync'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,6 +24,11 @@ const IndexRoute = IndexRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicAnnouncementsRoute = ApiPublicAnnouncementsRouteImport.update({
+  id: '/api/public/announcements',
+  path: '/api/public/announcements',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicDiscussionsRoute = ApiPublicDiscussionsRouteImport.update({
@@ -34,44 +41,72 @@ const ApiPublicJourneyRoute = ApiPublicJourneyRouteImport.update({
   path: '/api/public/journey',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminAnnouncementsSyncRoute =
+  ApiAdminAnnouncementsSyncRouteImport.update({
+    id: '/api/admin/announcements/sync',
+    path: '/api/admin/announcements/sync',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/api/public/announcements': typeof ApiPublicAnnouncementsRoute
   '/api/public/discussions': typeof ApiPublicDiscussionsRoute
   '/api/public/journey': typeof ApiPublicJourneyRoute
+  '/api/admin/announcements/sync': typeof ApiAdminAnnouncementsSyncRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/api/public/announcements': typeof ApiPublicAnnouncementsRoute
   '/api/public/discussions': typeof ApiPublicDiscussionsRoute
   '/api/public/journey': typeof ApiPublicJourneyRoute
+  '/api/admin/announcements/sync': typeof ApiAdminAnnouncementsSyncRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/api/public/announcements': typeof ApiPublicAnnouncementsRoute
   '/api/public/discussions': typeof ApiPublicDiscussionsRoute
   '/api/public/journey': typeof ApiPublicJourneyRoute
+  '/api/admin/announcements/sync': typeof ApiAdminAnnouncementsSyncRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/api/public/discussions' | '/api/public/journey'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/api/public/announcements'
+    | '/api/public/discussions'
+    | '/api/public/journey'
+    | '/api/admin/announcements/sync'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/api/public/discussions' | '/api/public/journey'
+  to:
+    | '/'
+    | '/login'
+    | '/api/public/announcements'
+    | '/api/public/discussions'
+    | '/api/public/journey'
+    | '/api/admin/announcements/sync'
   id:
     | '__root__'
     | '/'
     | '/login'
+    | '/api/public/announcements'
     | '/api/public/discussions'
     | '/api/public/journey'
+    | '/api/admin/announcements/sync'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
+  ApiPublicAnnouncementsRoute: typeof ApiPublicAnnouncementsRoute
   ApiPublicDiscussionsRoute: typeof ApiPublicDiscussionsRoute
   ApiPublicJourneyRoute: typeof ApiPublicJourneyRoute
+  ApiAdminAnnouncementsSyncRoute: typeof ApiAdminAnnouncementsSyncRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -90,6 +125,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/announcements': {
+      id: '/api/public/announcements'
+      path: '/api/public/announcements'
+      fullPath: '/api/public/announcements'
+      preLoaderRoute: typeof ApiPublicAnnouncementsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/discussions': {
       id: '/api/public/discussions'
       path: '/api/public/discussions'
@@ -104,14 +146,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicJourneyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/announcements/sync': {
+      id: '/api/admin/announcements/sync'
+      path: '/api/admin/announcements/sync'
+      fullPath: '/api/admin/announcements/sync'
+      preLoaderRoute: typeof ApiAdminAnnouncementsSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
+  ApiPublicAnnouncementsRoute: ApiPublicAnnouncementsRoute,
   ApiPublicDiscussionsRoute: ApiPublicDiscussionsRoute,
   ApiPublicJourneyRoute: ApiPublicJourneyRoute,
+  ApiAdminAnnouncementsSyncRoute: ApiAdminAnnouncementsSyncRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

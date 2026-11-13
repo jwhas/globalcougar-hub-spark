@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcements: {
+        Row: {
+          categories: string[]
+          ends_at: string | null
+          expires_at: string | null
+          first_seen_at: string
+          id: string
+          interest_keys: string[]
+          is_published: boolean
+          last_seen_at: string
+          published_at: string | null
+          source: string
+          source_categories: string[]
+          source_item_id: string
+          source_url: string
+          starts_at: string | null
+          summary: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          categories?: string[]
+          ends_at?: string | null
+          expires_at?: string | null
+          first_seen_at?: string
+          id?: string
+          interest_keys?: string[]
+          is_published?: boolean
+          last_seen_at?: string
+          published_at?: string | null
+          source: string
+          source_categories?: string[]
+          source_item_id: string
+          source_url: string
+          starts_at?: string | null
+          summary?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          categories?: string[]
+          ends_at?: string | null
+          expires_at?: string | null
+          first_seen_at?: string
+          id?: string
+          interest_keys?: string[]
+          is_published?: boolean
+          last_seen_at?: string
+          published_at?: string | null
+          source?: string
+          source_categories?: string[]
+          source_item_id?: string
+          source_url?: string
+          starts_at?: string | null
+          summary?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       forum_reply: {
         Row: {
           body: string

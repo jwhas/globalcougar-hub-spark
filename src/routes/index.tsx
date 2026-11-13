@@ -41,7 +41,7 @@ function Index() {
         
         // Restore iframe URL parameters for the prototype
         const meta = session.user.user_metadata ?? {};
-        const qs = new URLSearchParams({ v: '12', home: '1' });
+        const qs = new URLSearchParams({ v: '13', home: '1' });
         if (meta['country']) qs.set('country', String(meta['country']));
         const helpTopics = meta['help_topics'];
         qs.set(

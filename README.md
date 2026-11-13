@@ -66,6 +66,26 @@ client, bounds request size, redacts common identifiers, and returns a friendly
 retry message for rate limits or unavailable free models. The key must not use a
 `VITE_` prefix.
 
+### Local BYU News announcements (manual import only)
+
+The announcement table is defined in
+[`drizzle/migrations/0003_byu_news_announcements.sql`](./drizzle/migrations/0003_byu_news_announcements.sql).
+Review and run that SQL manually in the Supabase SQL Editor before testing the
+live feed. The app does not apply migrations automatically.
+
+The local importer reads the official BYU News RSS feed and upserts records
+through `/api/admin/announcements/sync`. To enable it locally, provide
+`SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`,
+`ANNOUNCEMENTS_IMPORT_ENABLED=true`, and an `ANNOUNCEMENTS_SYNC_SECRET` of at
+least 32 characters to the development server process. Do not use a `VITE_`
+prefix for the service-role key. The importer endpoint is disabled in production
+and no scheduled import is configured.
+
+After starting the local app, manually POST to the sync route with
+`Authorization: Bearer <ANNOUNCEMENTS_SYNC_SECRET>`. The Updates page displays
+imported items with source links while retaining the nine existing demo cards
+with explicit “DEMO · NOT LIVE” labels. Demo items have no official source link.
+
 ## Verifying the Vertical Slice
 1. Trigger the action: In the Assigned Onboarding Checkpoints section at the top, click Mark Complete on Milestone 2: Complete TB Skin Test.
 2. UI update: The button turns green, changes to Completed, and the counter updates from 1 / 2 to 2 / 2.
