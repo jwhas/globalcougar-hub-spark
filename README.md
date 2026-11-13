@@ -61,7 +61,7 @@ never receives the OpenRouter key.
 4. Deploy only the function:
    `supabase functions deploy globalcougar-chat --no-verify-jwt`
 
-The function always uses the exact `openrouter/free` model, limits requests per
+The function uses the pinned free `nvidia/nemotron-3.5-super-vl:free` model for consistent multilingual responses, limits requests per
 client, bounds request size, redacts common identifiers, and returns a friendly
 retry message for rate limits or unavailable free models. The key must not use a
 `VITE_` prefix.
