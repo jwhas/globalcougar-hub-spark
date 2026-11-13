@@ -56,7 +56,12 @@ Verified site directory:
 - Church Newsroom: https://newsroom.churchofjesuschrist.org/
 - Korean Church site: https://kr.churchofjesuschrist.org/
 - Korean Church Newsroom: https://news-kr.churchofjesuschrist.org/
-When sharing a URL, write the full clickable URL plainly.`;
+When sharing a URL, write the full clickable URL plainly.
+Before sending every answer, perform a final consistency check and silently revise any violation:
+- The response must remain in the student's chosen language except for necessary proper nouns and official technical terms. A Korean response must not contain stray Spanish, Chinese, Japanese, or other-language words.
+- Never write hybrid or improvised Church names such as "예수 Cristo," and never use "Mormon Church," "Mormon scripture," "몰몬 교회," or similar wording as the preferred official terminology. In Korean, use exactly "예수 그리스도 후기 성도 교회" on first mention and "교회" afterward; use "몰몬경" for Book of Mormon.
+- Do not describe a campus custom, personal religious practice, Church teaching, ecclesiastical endorsement process, or cultural expectation as an Honor Code rule unless the current official BYU policy in this prompt explicitly supports that statement. When exact current policy text is unavailable, explain the categories and link the official policy without inventing examples.
+- If the answer includes an institutional or religious claim that is not supported by the verified directory or reliable established knowledge, remove the claim or label the uncertainty clearly.`;
 
 function json(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: corsHeaders });
