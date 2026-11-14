@@ -19,7 +19,10 @@ const personalTaskUpdateSchema = z.object({
   status: z.enum(['not_started', 'in_progress', 'completed']).optional(),
   title: z.string().trim().min(1).max(160).optional(),
   description: z.string().trim().max(1000).optional(),
-  steps: z.array(z.string().trim().min(1).max(300)).min(1).max(20).optional(),
+  steps: z.array(z.object({
+    text: z.string().trim().min(1).max(300),
+    completed: z.boolean(),
+  })).min(1).max(20).optional(),
 }).refine(value => value.status || value.title || value.description !== undefined || value.steps, { message: 'No task changes provided.' })
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(v => !Number.isNaN(Date.parse(v))).nullable()
 const settingsSchema = z.object({
