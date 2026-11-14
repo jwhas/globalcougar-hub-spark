@@ -66,6 +66,34 @@ client, bounds request size, redacts common identifiers, and returns a friendly
 retry message for rate limits or unavailable free models. The key must not use a
 `VITE_` prefix.
 
+#### Official-source retrieval
+
+Before the single OpenRouter request for each question, the Edge Function uses
+deterministic multilingual keyword matching to select at most three pages from
+the allowlisted directory in
+`supabase/functions/globalcougar-chat/trusted-sources.ts`. It downloads only
+those pages, extracts short relevant passages, and gives the passages to the
+existing NVIDIA model with source labels. Successful source URLs are appended
+by the backend, rather than invented by the model.
+
+Fetched documents use a short in-memory cache within each Edge Function
+instance. Requests have HTTPS-host validation, redirect validation, timeouts,
+content-type checks, and document-size limits. Live fetching supports HTML and
+plain text. A small number of important official PDF or bot-protected sources
+use concise, reviewed text indexed alongside their original URL in the trusted
+source directory. A failed or unsupported source is omitted and the assistant
+is instructed not to fill the gap with a guess.
+
+Run the mocked retrieval and OpenRouter tests without spending API quota:
+
+`node --test supabase/functions/globalcougar-chat/retrieval.test.ts`
+
+The code does not assume a fixed OpenRouter free-tier quota. To inspect the
+limits and usage attached to the configured key, query OpenRouter's key endpoint
+locally without printing the key itself:
+
+`read -s OPENROUTER_API_KEY && printf '\n' && curl -s https://openrouter.ai/api/v1/key -H "Authorization: Bearer $OPENROUTER_API_KEY" && unset OPENROUTER_API_KEY`
+
 ## Verifying the Vertical Slice
 1. Trigger the action: In the Assigned Onboarding Checkpoints section at the top, click Mark Complete on Milestone 2: Complete TB Skin Test.
 2. UI update: The button turns green, changes to Completed, and the counter updates from 1 / 2 to 2 / 2.
