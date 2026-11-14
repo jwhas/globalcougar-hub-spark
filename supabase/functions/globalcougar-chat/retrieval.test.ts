@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   clearRetrievalCacheForTests,
+  buildContextualRetrievalQuery,
   extractReadableText,
   fetchTrustedDocument,
   formatOfficialContext,
@@ -86,6 +87,17 @@ test("selects the ISSS advisor directory for multilingual advisor questions", ()
   for (const question of ["My last name is Young. Who is my ISSS advisor?", "제 성은 김인데 ISSS 담당자가 누구예요?", "¿Quién es mi asesor de ISSS si mi apellido es Díaz?"]) {
     assert.equal(selectTrustedSources(question)[0]?.source.id, "byu-isss-advisor-assignments");
   }
+});
+
+test("carries advisor intent into a name-only follow-up", () => {
+  const query = buildContextualRetrievalQuery([
+    { role: "user", content: "내 ISSS 어드바이저가 누구야?" },
+    { role: "assistant", content: "성을 알려주세요." },
+    { role: "user", content: "내 이름은 Youjin Son이야" },
+  ]);
+  assert.match(query, /어드바이저/);
+  assert.match(query, /Youjin Son/);
+  assert.equal(selectTrustedSources(query)[0]?.source.id, "byu-isss-advisor-assignments");
 });
 
 test("the assistant explains advisor assignment using the family name initial", () => {
