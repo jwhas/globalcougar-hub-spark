@@ -122,6 +122,14 @@ export function selectTrustedSources(question: string, limit = MAX_SOURCES): Sel
   }).filter((item) => item.score >= 2).sort((a, b) => b.score - a.score || a.source.id.localeCompare(b.source.id)).slice(0, limit);
 }
 
+export function buildContextualRetrievalQuery(messages: Array<{ role: string; content: string }>) {
+  const userMessages = messages.filter(({ role }) => role === "user");
+  const latest = userMessages.at(-1)?.content ?? "";
+  if (!latest || selectTrustedSources(latest).length) return latest;
+  const previous = userMessages.at(-2)?.content;
+  return previous ? `${previous}\n${latest}` : latest;
+}
+
 function decodeHtml(value: string) {
   const named: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };
   return value.replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, (_, entity: string) => {

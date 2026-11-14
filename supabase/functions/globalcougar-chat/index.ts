@@ -1,4 +1,4 @@
-import { formatOfficialContext, retrieveOfficialSources } from "./retrieval.ts";
+import { buildContextualRetrievalQuery, formatOfficialContext, retrieveOfficialSources } from "./retrieval.ts";
 import { requestOpenRouter } from "./openrouter.ts";
 
 const MODEL = "nvidia/nemotron-3.5-super-vl:free";
@@ -133,7 +133,8 @@ Deno.serve(async (request) => {
   const messages = parseMessages(payload);
   if (!messages || messages.at(-1)?.role !== "user") return json({ error: "Please send a valid chat message." }, 400);
   const latestQuestion = [...messages].reverse().find((message) => message.role === "user")?.content ?? "";
-  const retrieval = await retrieveOfficialSources(latestQuestion);
+  const retrievalQuery = buildContextualRetrievalQuery(messages);
+  const retrieval = await retrieveOfficialSources(retrievalQuery);
   const officialContext = formatOfficialContext(retrieval);
 
   try {
