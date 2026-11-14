@@ -25,6 +25,14 @@ export const TRUSTED_HOSTS = new Set([
 
 export const TRUSTED_SOURCES: TrustedSource[] = [
   {
+    id: "byu-isss-advisor-assignments",
+    title: "BYU ISSS Contact Us and Advisor Assignments",
+    url: "https://iss.byu.edu/contact-us",
+    authority: "BYU International Student and Scholar Services",
+    topics: ["assigned isss advisor", "international student advisor", "advisor by last name", "isss contact"],
+    keywords: ["advisor", "adviser", "assigned advisor", "my advisor", "last name", "family name", "surname", "담당자", "어드바이저", "상담사", "성씨", "성", "asesor", "asesora", "apellido", "conseiller", "berater", "顾问", "姓", "アドバイザー", "苗字"],
+  },
+  {
     id: "byu-isss-cpt-application",
     title: "BYU ISSS Curricular Practical Training Application Information",
     url: "https://iss.byu.edu/00000172-e226-df6e-a3f7-ef6e55990000/cpt-information-internship-coordinator-cpt-verification-pdf",

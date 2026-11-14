@@ -169,7 +169,12 @@ export function extractReadableText(html: string) {
   return decodeHtml(stripTagsPreservingBreaks(cleaned))
     .split("\n")
     .map((line) => line.replace(/\s+/g, " ").trim())
-    .filter((line) => line.length >= 24)
+    .filter((line) =>
+      line.length >= 24 ||
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(line) ||
+      /^\p{Lu}[\p{L}'’-]+(?:\s+\p{Lu}[\p{L}'’-]+){1,3}$/u.test(line) ||
+      /^\p{Lu}-\p{Lu}$/u.test(line)
+    )
     .join("\n")
     .slice(0, MAX_EXTRACTED_CHARS);
 }

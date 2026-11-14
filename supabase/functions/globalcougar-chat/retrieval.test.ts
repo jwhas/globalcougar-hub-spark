@@ -11,6 +11,7 @@ import {
 } from "./retrieval.ts";
 import { openRouterErrorMessage, requestOpenRouter } from "./openrouter.ts";
 import { TRUSTED_SOURCES } from "./trusted-sources.ts";
+import { readFileSync } from "node:fs";
 
 const html = (body: string) => new Response(`<!doctype html><html><body><header>Site menu that should be removed</header><main><h1>Official guidance</h1>${body}</main><footer>Footer links that should be removed</footer></body></html>`, {
   status: 200,
@@ -72,6 +73,25 @@ test("removes navigation, scripts, and footer text from HTML", () => {
   const text = extractReadableText("<nav>Navigation content should disappear</nav><article><h1>CPT Guidance</h1><p>Curricular practical training must relate to the curriculum.</p></article><script>ignore me</script><footer>Footer content should disappear</footer>");
   assert.match(text, /Curricular practical training/);
   assert.doesNotMatch(text, /Navigation content|ignore me|Footer content/);
+});
+
+test("preserves short advisor names, emails, and assignment ranges", () => {
+  const text = extractReadableText(`<main><h3>Sam Brown</h3><div>sam_brown@byu.edu<br>Advises Students with Last Names <strong>V-Z</strong></div></main>`);
+  assert.match(text, /Sam Brown/);
+  assert.match(text, /sam_brown@byu\.edu/);
+  assert.match(text, /V-Z/);
+});
+
+test("selects the ISSS advisor directory for multilingual advisor questions", () => {
+  for (const question of ["My last name is Young. Who is my ISSS advisor?", "제 성은 김인데 ISSS 담당자가 누구예요?", "¿Quién es mi asesor de ISSS si mi apellido es Díaz?"]) {
+    assert.equal(selectTrustedSources(question)[0]?.source.id, "byu-isss-advisor-assignments");
+  }
+});
+
+test("the assistant explains advisor assignment using the family name initial", () => {
+  const handler = readFileSync(new URL("./index.ts", import.meta.url), "utf8");
+  assert.match(handler, /Briefly state which family\/last name you understood/);
+  assert.match(handler, /first letter Y places you in the V-Z range/);
 });
 
 test("retrieves, ranks, cites, and caches official excerpts", async () => {
