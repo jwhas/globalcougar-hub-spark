@@ -100,6 +100,18 @@ test("carries advisor intent into a name-only follow-up", () => {
   assert.equal(selectTrustedSources(query)[0]?.source.id, "byu-isss-advisor-assignments");
 });
 
+test("uses reviewed advisor assignments when the live ISSS page is blocked", async () => {
+  clearRetrievalCacheForTests();
+  const result = await retrieveOfficialSources("내 이름은 Youjin Son인데 내 담당 어드바이저 알아?", {
+    fetcher: async () => new Response("blocked", { status: 403, headers: { "content-type": "text/plain" } }),
+  });
+  assert.equal(result.sources[0]?.sourceId, "byu-isss-advisor-assignments");
+  const evidence = result.excerpts.map(({ text }) => text).join(" ");
+  assert.match(evidence, /Landon Tooke/);
+  assert.match(evidence, /last names P-U/);
+  assert.match(evidence, /landon\.tooke@byu\.edu/);
+});
+
 test("the assistant explains advisor assignment using the family name initial", () => {
   const handler = readFileSync(new URL("./index.ts", import.meta.url), "utf8");
   assert.match(handler, /Briefly state which family\/last name you understood/);
