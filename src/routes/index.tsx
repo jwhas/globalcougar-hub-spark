@@ -73,11 +73,21 @@ function Index() {
     void navigate({ to: '/login' });
   }, [navigate]);
 
-  const syncPrototypeUser = useCallback(() => {
-    iframeRef.current?.contentWindow?.postMessage(
-      { type: 'gc-user', name: currentUser },
-      window.location.origin
-    );
+  const syncPrototypeUser = useCallback(async () => {
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error('Could not sync prototype session:', error.message);
+        return;
+      }
+
+      iframeRef.current?.contentWindow?.postMessage(
+        { type: 'gc-user', name: currentUser, accessToken: session?.access_token ?? '' },
+        window.location.origin
+      );
+    } catch (error) {
+      console.error('Could not sync prototype session:', error);
+    }
   }, [currentUser]);
 
   useEffect(() => {
