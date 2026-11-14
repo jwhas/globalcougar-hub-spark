@@ -14,7 +14,6 @@ export const Route = createFileRoute('/')({
 
 function Index() {
   const [currentUser, setCurrentUser] = useState<string>('Student');
-  const [accessToken, setAccessToken] = useState('');
   const [frameQuery, setFrameQuery] = useState<string>('');
   const navigate = useNavigate();
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -39,7 +38,6 @@ function Index() {
 
         const name = session.user.user_metadata?.['full_name'] || session.user.email?.split('@')[0] || 'Student';
         setCurrentUser(name);
-        setAccessToken(session.access_token);
         
         // Restore iframe URL parameters for the prototype
         const meta = session.user.user_metadata ?? {};
@@ -66,13 +64,6 @@ function Index() {
     };
   }, [navigate]);
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setAccessToken(session?.access_token ?? '');
-    });
-    return () => subscription.unsubscribe();
-  }, []);
-
   const handleLogout = useCallback(async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -84,14 +75,10 @@ function Index() {
 
   const syncPrototypeUser = useCallback(() => {
     iframeRef.current?.contentWindow?.postMessage(
-      { type: 'gc-user', name: currentUser, accessToken },
+      { type: 'gc-user', name: currentUser },
       window.location.origin
     );
-  }, [currentUser, accessToken]);
-
-  useEffect(() => {
-    if (frameQuery) syncPrototypeUser();
-  }, [frameQuery, syncPrototypeUser]);
+  }, [currentUser]);
 
   useEffect(() => {
     const handlePrototypeMessage = (event: MessageEvent) => {
