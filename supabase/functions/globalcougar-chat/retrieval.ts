@@ -282,7 +282,7 @@ export async function retrieveOfficialSources(
   const attempted = selected.map(({ source }) => source.url);
   const failures: string[] = [];
   const documents = await Promise.all(selected.map(async (selection) => {
-    if (selection.source.indexedText) return { ...selection, text: selection.source.indexedText };
+    if (selection.source.indexedText && !selection.source.preferLive) return { ...selection, text: selection.source.indexedText };
     const cached = documentCache.get(selection.source.url);
     if (cached && now - cached.fetchedAt < CACHE_TTL_MS) return { ...selection, text: cached.text };
     try {
@@ -290,6 +290,7 @@ export async function retrieveOfficialSources(
       documentCache.set(selection.source.url, { text, fetchedAt: now });
       return { ...selection, text };
     } catch (error) {
+      if (selection.source.indexedText) return { ...selection, text: selection.source.indexedText };
       failures.push(`${selection.source.id}:${error instanceof Error ? error.message : "fetch_failed"}`);
       return null;
     }

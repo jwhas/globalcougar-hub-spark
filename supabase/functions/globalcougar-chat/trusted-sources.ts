@@ -7,6 +7,7 @@ export type TrustedSource = {
   keywords: string[];
   negativeKeywords?: string[];
   indexedText?: string;
+  preferLive?: boolean;
 };
 
 export const TRUSTED_HOSTS = new Set([
@@ -31,6 +32,16 @@ export const TRUSTED_SOURCES: TrustedSource[] = [
     authority: "BYU International Student and Scholar Services",
     topics: ["assigned isss advisor", "international student advisor", "advisor by last name", "isss contact"],
     keywords: ["advisor", "adviser", "assigned advisor", "my advisor", "last name", "family name", "surname", "담당자", "어드바이저", "상담사", "성씨", "성", "asesor", "asesora", "apellido", "conseiller", "berater", "顾问", "姓", "アドバイザー", "苗字"],
+    preferLive: true,
+    indexedText: `BYU ISSS CONTACT US AND ADVISOR ASSIGNMENTS
+Advisor assignments are based on the first letter of the student's family/last name.
+Rob Llewellyn, Advisor, rob_llewellyn@byu.edu: last names A-D.
+Cristi Johnson, Advisor, cristi.johnson@byu.edu: last names E-J.
+The K-O advisor position is currently vacant. Students in K-O may schedule with any of the other ISSS advisors; do not assign a specific advisor for this range.
+Landon Tooke, Advisor, landon.tooke@byu.edu: last names P-U.
+Sam Brown, Director, sam_brown@byu.edu: last names V-Z.
+ISSS office: iss@byu.edu, (801) 422-2695, 2400 WSC.
+Official source: https://iss.byu.edu/contact-us`,
   },
   {
     id: "byu-isss-cpt-application",
