@@ -11,6 +11,7 @@ import {
   selectTrustedSources,
 } from "./retrieval.ts";
 import { openRouterErrorMessage, requestOpenRouter } from "./openrouter.ts";
+import { parseTaskSuggestion, TASK_BLOCK_END, TASK_BLOCK_START } from "./task-suggestion.ts";
 import { TRUSTED_SOURCES } from "./trusted-sources.ts";
 import { readFileSync } from "node:fs";
 
@@ -184,5 +185,21 @@ test("does not retry a mocked 429 response", async () => {
   assert.equal(calls, 1);
   assert.equal(result.ok, false);
   if (!result.ok) assert.match(result.error, /request limit/);
+});
+
+test("extracts and validates a task draft without exposing its machine block", () => {
+  const result = parseTaskSuggestion(`초안을 만들었어요. 검토해 주세요.\n${TASK_BLOCK_START}\n{"title":"은행 계좌 개설","description":"도착 후 필요한 준비","steps":["필요 서류 확인","은행 방문"]}\n${TASK_BLOCK_END}`);
+  assert.equal(result.reply, "초안을 만들었어요. 검토해 주세요.");
+  assert.deepEqual(result.taskSuggestion, {
+    title: "은행 계좌 개설",
+    description: "도착 후 필요한 준비",
+    steps: ["필요 서류 확인", "은행 방문"],
+  });
+});
+
+test("rejects malformed task drafts and keeps the conversational reply", () => {
+  const result = parseTaskSuggestion(`What date should I use?\n${TASK_BLOCK_START}\n{"title":"Missing steps"}\n${TASK_BLOCK_END}`);
+  assert.equal(result.reply, "What date should I use?");
+  assert.equal(result.taskSuggestion, null);
 });
 
