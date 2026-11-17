@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -11,6 +12,7 @@ const dateValue = z
   })
   .nullable();
 
+// Allowlist editable public.student fields; identity and creation IDs stay database-managed.
 const userSchema = z
   .object({
     name: z.string().trim().min(1).max(120),
@@ -33,34 +35,44 @@ function sameOrigin(request: Request): boolean {
   return request.headers.get("origin") === new URL(request.url).origin;
 }
 
-async function authenticationError(request: Request): Promise<Response | null> {
+function authenticatedClient(request: Request) {
   const authorization = request.headers.get("authorization");
   if (!authorization?.startsWith("Bearer ") || !authorization.slice(7).trim()) {
     return fail("Sign in to manage users.", 401);
   }
 
-  const url = process.env["SUPABASE_URL"];
-  const key = process.env["SUPABASE_PUBLISHABLE_KEY"];
+  const token = authorization.slice(7).trim();
+  const url = process.env["SUPABASE_URL"] ?? process.env["VITE_SUPABASE_URL"];
+  const key =
+    process.env["SUPABASE_PUBLISHABLE_KEY"] ??
+    process.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ??
+    process.env["VITE_SUPABASE_ANON_KEY"];
   if (!url || !key) {
-    console.error("User management authentication is not configured.");
+    console.error(
+      "User management requires Supabase URL and publishable-key environment variables.",
+    );
     return fail("User management is not configured.", 503);
   }
 
-  try {
-    const response = await fetch(`${url}/auth/v1/user`, {
-      headers: { apikey: key, Authorization: authorization },
-    });
-    if (!response.ok) return fail("Sign in to manage users.", 401);
+  const db = createClient<Database>(url, key, {
+    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+    global: {
+      fetch: (input, init) => {
+        const headers = new Headers(
+          typeof Request !== "undefined" && input instanceof Request ? input.headers : undefined,
+        );
+        if (init?.headers) {
+          new Headers(init.headers).forEach((value, name) => headers.set(name, value));
+        }
+        headers.set("apikey", key);
+        headers.set("Authorization", `Bearer ${token}`);
+        return fetch(input, { ...init, headers });
+      },
+    },
+  });
 
-    const user: unknown = await response.json();
-    if (!user || typeof user !== "object" || !("id" in user) || typeof user.id !== "string") {
-      return fail("Sign in to manage users.", 401);
-    }
-    return null;
-  } catch (error) {
-    console.error("Could not verify user management session:", error);
-    return fail("Authentication is temporarily unavailable.", 503);
-  }
+  // Forward the signed-in user's token so Supabase RLS, not a service-role key, authorizes CRUD.
+  return { db };
 }
 
 async function readUserInput(request: Request): Promise<UserInput | Response> {
@@ -90,67 +102,75 @@ export const Route = createFileRoute("/api/public/users")({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        const authError = await authenticationError(request);
-        if (authError) return authError;
+        const auth = await authenticatedClient(request);
+        if (auth instanceof Response) return auth;
 
         try {
-          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-          const { data, error } = await supabaseAdmin
+          const { data, error } = await auth.db
             .from("student")
             .select("*")
             .order("id", { ascending: true });
-          if (error) throw error;
+          if (error) {
+            console.error("Could not load student records:", error.message);
+            return fail(`Users could not be loaded: ${error.message}`, 502);
+          }
           return json({ ok: true, users: data ?? [] });
         } catch (error) {
           console.error(
             "Could not load student records:",
             error instanceof Error ? error.message : error,
           );
-          return fail("Users could not be loaded.", 502);
+          return fail(
+            `Users could not be loaded: ${error instanceof Error ? error.message : "database request failed."}`,
+            502,
+          );
         }
       },
       POST: async ({ request }) => {
         if (!sameOrigin(request)) return fail("Only this site can manage users.", 403);
-        const authError = await authenticationError(request);
-        if (authError) return authError;
+        const auth = await authenticatedClient(request);
+        if (auth instanceof Response) return auth;
         const input = await readUserInput(request);
         if (input instanceof Response) return input;
 
         try {
-          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-          const { data, error } = await supabaseAdmin
-            .from("student")
-            .insert(input)
-            .select("*")
-            .single();
-          if (error) throw error;
+          const { data, error } = await auth.db.from("student").insert(input).select("*").single();
+          if (error) {
+            console.error("Could not create student record:", error.message);
+            return fail(`The user could not be created: ${error.message}`, 502);
+          }
           return json({ ok: true, user: data }, 201);
         } catch (error) {
           console.error(
             "Could not create student record:",
             error instanceof Error ? error.message : error,
           );
-          return fail("The user could not be created.", 502);
+          return fail(
+            `The user could not be created: ${error instanceof Error ? error.message : "database request failed."}`,
+            502,
+          );
         }
       },
       PUT: async ({ request }) => {
         if (!sameOrigin(request)) return fail("Only this site can manage users.", 403);
-        const authError = await authenticationError(request);
-        if (authError) return authError;
+        const auth = await authenticatedClient(request);
+        if (auth instanceof Response) return auth;
         const id = userId(request);
         if (id === null) return fail("A valid user ID is required.", 400);
         const input = await readUserInput(request);
         if (input instanceof Response) return input;
 
         try {
-          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-          const { data, error } = await supabaseAdmin
+          const { data, error } = await auth.db
             .from("student")
             .update(input)
             .eq("id", id)
             .select("*")
             .maybeSingle();
-          if (error) throw error;
+          if (error) {
+            console.error("Could not update student record:", error.message);
+            return fail(`The user could not be updated: ${error.message}`, 502);
+          }
           if (!data) return fail("User not found.", 404);
           return json({ ok: true, user: data });
         } catch (error) {
@@ -158,25 +178,30 @@ export const Route = createFileRoute("/api/public/users")({
             "Could not update student record:",
             error instanceof Error ? error.message : error,
           );
-          return fail("The user could not be updated.", 502);
+          return fail(
+            `The user could not be updated: ${error instanceof Error ? error.message : "database request failed."}`,
+            502,
+          );
         }
       },
       DELETE: async ({ request }) => {
         if (!sameOrigin(request)) return fail("Only this site can manage users.", 403);
-        const authError = await authenticationError(request);
-        if (authError) return authError;
+        const auth = await authenticatedClient(request);
+        if (auth instanceof Response) return auth;
         const id = userId(request);
         if (id === null) return fail("A valid user ID is required.", 400);
 
         try {
-          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-          const { data, error } = await supabaseAdmin
+          const { data, error } = await auth.db
             .from("student")
             .delete()
             .eq("id", id)
             .select("id")
             .maybeSingle();
-          if (error) throw error;
+          if (error) {
+            console.error("Could not delete student record:", error.message);
+            return fail(`The user could not be deleted: ${error.message}`, 502);
+          }
           if (!data) return fail("User not found.", 404);
           return json({ ok: true });
         } catch (error) {
@@ -184,7 +209,10 @@ export const Route = createFileRoute("/api/public/users")({
             "Could not delete student record:",
             error instanceof Error ? error.message : error,
           );
-          return fail("The user could not be deleted.", 502);
+          return fail(
+            `The user could not be deleted: ${error instanceof Error ? error.message : "database request failed."}`,
+            502,
+          );
         }
       },
     },

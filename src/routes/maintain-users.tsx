@@ -76,6 +76,7 @@ async function requestUsers(
   init?: RequestInit,
   id?: number,
 ): Promise<Record<string, unknown>> {
+  // The bearer token lets the server API enforce the user's authenticated RLS policies.
   const headers = new Headers(init?.headers);
   headers.set("Authorization", `Bearer ${token}`);
   if (init?.body) headers.set("Content-Type", "application/json");
@@ -210,6 +211,7 @@ function MaintainUsersPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editUser, setEditUser] = useState<StudentFormValues>({ ...emptyStudent });
 
+  // Require a persisted Supabase session before the first authenticated read.
   useEffect(() => {
     let active = true;
 
@@ -271,6 +273,7 @@ function MaintainUsersPage() {
     }
   };
 
+  // Create a validated student row through the authenticated users API.
   const handleCreate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!accessToken) return;
@@ -300,6 +303,7 @@ function MaintainUsersPage() {
     setStatusMessage(null);
   };
 
+  // Update the selected row; the API forwards this session's token to Supabase RLS.
   const handleUpdate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!accessToken || editingId === null) return;
@@ -324,6 +328,7 @@ function MaintainUsersPage() {
     }
   };
 
+  // Confirm before deleting a student and cascading related forum/checklist rows.
   const handleDelete = async (user: Student) => {
     if (!accessToken) return;
     const confirmed = window.confirm(
@@ -343,6 +348,7 @@ function MaintainUsersPage() {
     }
   };
 
+  // Supabase signOut clears the persisted auth session before redirecting.
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {

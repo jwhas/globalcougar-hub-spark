@@ -65,6 +65,7 @@ function Index() {
   }, [navigate]);
 
   const handleLogout = useCallback(async () => {
+    // Supabase signOut clears the persisted auth session before the iframe is unmounted.
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error('Could not log out:', error.message);
@@ -92,6 +93,7 @@ function Index() {
   }, [currentUser]);
 
   useEffect(() => {
+    // Accept logout/navigation requests only from this app's embedded prototype.
     const handlePrototypeMessage = (event: MessageEvent) => {
       if (
         event.origin !== window.location.origin ||

@@ -1,6 +1,6 @@
 // src/routes/maintain-records.tsx
 // Admin CRUD page to Maintain Forum Replies (Create, Read, Update, Delete)
-// Protected so only authenticated users with a valid session cookie can access it
+// Protected by a Supabase session; database RLS authorizes each CRUD request.
 
 import { useEffect, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -34,13 +34,16 @@ function MaintainRecordsPage() {
   const [editStudentId, setEditStudentId] = useState<string>("");
   const [editThreadId, setEditThreadId] = useState<string>("");
 
-  // 1. Verify the Supabase session on mount; redirect if not logged in
+  // Verify the persisted Supabase session before loading records.
   useEffect(() => {
     let active = true;
 
     const enforceAuth = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession();
 
         if (!active) return;
         if (error) {
@@ -71,41 +74,45 @@ function MaintainRecordsPage() {
   // 2. READ: Fetch all records from the forum_reply table in Supabase
   const fetchRecords = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("forum_reply")
-      .select("*")
-      .order("id", { ascending: true });
-
-    if (error) {
-      setStatusMessage(`Error loading records: ${error.message}`);
-    } else {
-      setRecords(data || []);
+    try {
+      const { data, error } = await supabase
+        .from("forum_reply")
+        .select("*")
+        .order("id", { ascending: true });
+      if (error) throw new Error(error.message);
+      setRecords(data ?? []);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "The database request failed.";
+      console.error("Could not load forum replies:", error);
+      setStatusMessage(`Error loading records: ${message}`);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  // 3. CREATE: Insert a new record into forum_reply
+  // Create through the signed-in Supabase client so RLS can authorize the insert.
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatusMessage(null);
 
-    const { error } = await supabase.from("forum_reply").insert({
-      body: newBody,
-      student_id: Number(newStudentId),
-      thread_id: Number(newThreadId),
-    });
+    try {
+      const { error } = await supabase.from("forum_reply").insert({
+        body: newBody,
+        student_id: Number(newStudentId),
+        thread_id: Number(newThreadId),
+      });
+      if (error) throw new Error(error.message);
 
-    if (error) {
-      setStatusMessage(`Error adding record: ${error.message}`);
-      return;
+      setNewBody("");
+      setNewStudentId("");
+      setNewThreadId("");
+      setStatusMessage("Record added successfully.");
+      await fetchRecords();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "The database request failed.";
+      console.error("Could not create forum reply:", error);
+      setStatusMessage(`Error adding record: ${message}`);
     }
-
-    // Reset form fields and refresh table
-    setNewBody("");
-    setNewStudentId("");
-    setNewThreadId("");
-    setStatusMessage("Record added successfully.");
-    fetchRecords();
   };
 
   // Start editing a specific row
@@ -116,48 +123,50 @@ function MaintainRecordsPage() {
     setEditThreadId(String(record.thread_id));
   };
 
-  // 4. UPDATE: Save edited fields back to Supabase
+  // Update through the signed-in Supabase client and authenticated RLS policy.
   const handleUpdate = async (id: number) => {
     setStatusMessage(null);
 
-    const { error } = await supabase
-      .from("forum_reply")
-      .update({
-        body: editBody,
-        student_id: Number(editStudentId),
-        thread_id: Number(editThreadId),
-      })
-      .eq("id", id);
+    try {
+      const { error } = await supabase
+        .from("forum_reply")
+        .update({
+          body: editBody,
+          student_id: Number(editStudentId),
+          thread_id: Number(editThreadId),
+        })
+        .eq("id", id);
+      if (error) throw new Error(error.message);
 
-    if (error) {
-      setStatusMessage(`Error updating record: ${error.message}`);
-      return;
+      setEditingId(null);
+      setStatusMessage(`Record #${id} updated successfully.`);
+      await fetchRecords();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "The database request failed.";
+      console.error("Could not update forum reply:", error);
+      setStatusMessage(`Error updating record: ${message}`);
     }
-
-    setEditingId(null);
-    setStatusMessage(`Record #${id} updated successfully.`);
-    fetchRecords();
   };
 
-  // 5. DELETE: Remove a record by ID from Supabase
+  // Delete only after confirmation; deleting a reply leaves its thread intact.
   const handleDelete = async (id: number) => {
+    if (!window.confirm(`Delete forum reply #${id}?`)) return;
     setStatusMessage(null);
 
-    const { error } = await supabase
-      .from("forum_reply")
-      .delete()
-      .eq("id", id);
+    try {
+      const { error } = await supabase.from("forum_reply").delete().eq("id", id);
+      if (error) throw new Error(error.message);
 
-    if (error) {
-      setStatusMessage(`Error deleting record: ${error.message}`);
-      return;
+      setStatusMessage(`Record #${id} deleted.`);
+      await fetchRecords();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "The database request failed.";
+      console.error("Could not delete forum reply:", error);
+      setStatusMessage(`Error deleting record: ${message}`);
     }
-
-    setStatusMessage(`Record #${id} deleted.`);
-    fetchRecords();
   };
 
-  // Logout helper: clear the Supabase session and redirect to login
+  // Supabase signOut clears its persisted session before returning to login.
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -178,9 +187,7 @@ function MaintainRecordsPage() {
             ← Back to Home
           </Link>
           <span className="text-slate-300">|</span>
-          <h1 className="text-lg font-semibold text-slate-800">
-            Maintain Forum Replies (Records)
-          </h1>
+          <h1 className="text-lg font-semibold text-slate-800">Maintain Forum Replies (Records)</h1>
         </div>
 
         <div className="flex items-center gap-3">
@@ -209,9 +216,7 @@ function MaintainRecordsPage() {
 
         {/* CREATE FORM: Add a new record */}
         <section className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-          <h2 className="text-lg font-bold text-slate-800 mb-4">
-            Add New Forum Reply
-          </h2>
+          <h2 className="text-lg font-bold text-slate-800 mb-4">Add New Forum Reply</h2>
           <form onSubmit={handleCreate} className="grid md:grid-cols-4 gap-4 items-end">
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1">
@@ -242,9 +247,7 @@ function MaintainRecordsPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">
-                Reply Body
-              </label>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Reply Body</label>
               <input
                 type="text"
                 required
@@ -270,10 +273,7 @@ function MaintainRecordsPage() {
             <h2 className="text-lg font-bold text-slate-800">
               Existing Records ({records.length})
             </h2>
-            <button
-              onClick={fetchRecords}
-              className="text-sm text-indigo-700 hover:underline"
-            >
+            <button onClick={fetchRecords} className="text-sm text-indigo-700 hover:underline">
               Refresh
             </button>
           </div>
@@ -302,9 +302,7 @@ function MaintainRecordsPage() {
 
                     return (
                       <tr key={rec.id} className="hover:bg-slate-50">
-                        <td className="py-3 px-4 font-mono text-slate-600">
-                          {rec.id}
-                        </td>
+                        <td className="py-3 px-4 font-mono text-slate-600">{rec.id}</td>
 
                         {/* Thread ID cell */}
                         <td className="py-3 px-4">
