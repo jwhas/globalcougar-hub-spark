@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { supabase } from '@/integrations/supabase/client';
 
 export const Route = createFileRoute('/')({
@@ -95,39 +95,28 @@ function Index() {
     const handlePrototypeMessage = (event: MessageEvent) => {
       if (
         event.origin !== window.location.origin ||
-        event.source !== iframeRef.current?.contentWindow ||
-        event.data?.type !== 'gc-logout'
+        event.source !== iframeRef.current?.contentWindow
       ) {
         return;
       }
 
-      void handleLogout();
+      if (event.data?.type === 'gc-logout') {
+        void handleLogout();
+      } else if (event.data?.type === 'gc-navigate') {
+        if (event.data.path === '/maintain-users') {
+          void navigate({ to: '/maintain-users' });
+        } else if (event.data.path === '/maintain-records') {
+          void navigate({ to: '/maintain-records' });
+        }
+      }
     };
 
     window.addEventListener('message', handlePrototypeMessage);
     return () => window.removeEventListener('message', handlePrototypeMessage);
-  }, [handleLogout]);
+  }, [handleLogout, navigate]);
 
   return (
     <div className="relative h-screen w-full bg-white">
-      {/* Hidden Admin Controls: Only displayed once the user is logged in */}
-      {frameQuery && (
-        <div className="fixed top-3 right-4 z-50 flex items-center gap-2 bg-white/95 backdrop-blur px-3 py-2 rounded-lg shadow-md border border-slate-200">
-          <Link
-            to="/maintain-records"
-            className="px-3 py-1.5 text-xs font-semibold text-white bg-indigo-700 rounded hover:bg-indigo-800 transition"
-          >
-            Maintain Records
-          </Link>
-          <button
-            onClick={() => void handleLogout()}
-            className="px-3 py-1.5 text-xs font-semibold text-red-600 border border-red-600 rounded hover:bg-red-50 transition"
-          >
-            Logout
-          </button>
-        </div>
-      )}
-
       {frameQuery && (
         <iframe
           ref={iframeRef}
