@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { supabase } from '@/integrations/supabase/client';
 
 export const Route = createFileRoute('/')({
@@ -38,7 +38,7 @@ function Index() {
 
         const name = session.user.user_metadata?.['full_name'] || session.user.email?.split('@')[0] || 'Student';
         setCurrentUser(name);
-        
+
         // Restore iframe URL parameters for the prototype
         const meta = session.user.user_metadata ?? {};
         const qs = new URLSearchParams({ v: '12', home: '1' });
@@ -70,6 +70,7 @@ function Index() {
       console.error('Could not log out:', error.message);
       return;
     }
+    setFrameQuery(''); // Clears state so admin buttons immediately hide
     void navigate({ to: '/login' });
   }, [navigate]);
 
@@ -108,13 +109,31 @@ function Index() {
   }, [handleLogout]);
 
   return (
-    <div className="h-screen w-full bg-white">
+    <div className="relative h-screen w-full bg-white">
+      {/* Hidden Admin Controls: Only displayed once the user is logged in */}
       {frameQuery && (
-        <iframe 
+        <div className="fixed top-3 right-4 z-50 flex items-center gap-2 bg-white/95 backdrop-blur px-3 py-2 rounded-lg shadow-md border border-slate-200">
+          <Link
+            to="/maintain-records"
+            className="px-3 py-1.5 text-xs font-semibold text-white bg-indigo-700 rounded hover:bg-indigo-800 transition"
+          >
+            Maintain Records
+          </Link>
+          <button
+            onClick={() => void handleLogout()}
+            className="px-3 py-1.5 text-xs font-semibold text-red-600 border border-red-600 rounded hover:bg-red-50 transition"
+          >
+            Logout
+          </button>
+        </div>
+      )}
+
+      {frameQuery && (
+        <iframe
           ref={iframeRef}
           onLoad={syncPrototypeUser}
-          title="GlobalCougar prototype" 
-          src={`/globalcougar.html?${frameQuery}`} 
+          title="GlobalCougar prototype"
+          src={`/globalcougar.html?${frameQuery}`}
           className="h-full w-full border-0 bg-white"
         />
       )}
