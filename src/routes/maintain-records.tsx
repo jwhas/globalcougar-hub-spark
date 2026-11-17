@@ -5,7 +5,6 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { supabase } from "../integrations/supabase/client";
-import { getAuthCookie, clearAuthCookie } from "../lib/auth-cookie";
 import type { Database } from "../integrations/supabase/types";
 
 // Type alias matching the exact row structure in src/integrations/supabase/types.ts
@@ -35,15 +34,38 @@ function MaintainRecordsPage() {
   const [editStudentId, setEditStudentId] = useState<string>("");
   const [editThreadId, setEditThreadId] = useState<string>("");
 
-  // 1. Verify authentication cookie on mount; redirect if not logged in
+  // 1. Verify the Supabase session on mount; redirect if not logged in
   useEffect(() => {
-    const email = getAuthCookie();
-    if (!email) {
-      navigate({ to: "/login" });
-      return;
-    }
-    setCurrentUser(email);
-    fetchRecords();
+    let active = true;
+
+    const enforceAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+
+        if (!active) return;
+        if (error) {
+          console.error("Could not verify session:", error.message);
+          void navigate({ to: "/login" });
+          return;
+        }
+        if (!session) {
+          void navigate({ to: "/login" });
+          return;
+        }
+
+        setCurrentUser(session.user.email ?? session.user.id);
+        void fetchRecords();
+      } catch (error) {
+        if (!active) return;
+        console.error("Could not verify session:", error);
+        void navigate({ to: "/login" });
+      }
+    };
+
+    void enforceAuth();
+    return () => {
+      active = false;
+    };
   }, [navigate]);
 
   // 2. READ: Fetch all records from the forum_reply table in Supabase
@@ -135,10 +157,14 @@ function MaintainRecordsPage() {
     fetchRecords();
   };
 
-  // Logout helper: clear cookie and redirect to landing page
-  const handleLogout = () => {
-    clearAuthCookie();
-    navigate({ to: "/" });
+  // Logout helper: clear the Supabase session and redirect to login
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error("Could not log out:", error.message);
+      return;
+    }
+    void navigate({ to: "/login" });
   };
 
   if (!currentUser) return null;
