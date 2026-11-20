@@ -38,7 +38,7 @@ function Index() {
 
         const name = session.user.user_metadata?.['full_name'] || session.user.email?.split('@')[0] || 'Student';
         setCurrentUser(name);
-        
+
         // Restore iframe URL parameters for the prototype
         const meta = session.user.user_metadata ?? {};
         const qs = new URLSearchParams({ v: '12', home: '1' });
@@ -65,11 +65,13 @@ function Index() {
   }, [navigate]);
 
   const handleLogout = useCallback(async () => {
+    // Supabase signOut clears the persisted auth session before the iframe is unmounted.
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error('Could not log out:', error.message);
       return;
     }
+    setFrameQuery(''); // Clears state so admin buttons immediately hide
     void navigate({ to: '/login' });
   }, [navigate]);
 
@@ -91,6 +93,7 @@ function Index() {
   }, [currentUser]);
 
   useEffect(() => {
+    // Accept logout/navigation requests only from this app's embedded prototype.
     const handlePrototypeMessage = (event: MessageEvent) => {
       if (
         event.origin !== window.location.origin ||
@@ -99,22 +102,31 @@ function Index() {
         return;
       }
 
-      if (event.data?.type === 'gc-logout') void handleLogout();
-      if (event.data?.type === 'gc-request-user') void syncPrototypeUser();
+      if (event.data?.type === 'gc-logout') {
+        void handleLogout();
+      } else if (event.data?.type === 'gc-request-user') {
+        void syncPrototypeUser();
+      } else if (event.data?.type === 'gc-navigate') {
+        if (event.data.path === '/maintain-users') {
+          void navigate({ to: '/maintain-users' });
+        } else if (event.data.path === '/maintain-records') {
+          void navigate({ to: '/maintain-records' });
+        }
+      }
     };
 
     window.addEventListener('message', handlePrototypeMessage);
     return () => window.removeEventListener('message', handlePrototypeMessage);
-  }, [handleLogout, syncPrototypeUser]);
+  }, [handleLogout, navigate, syncPrototypeUser]);
 
   return (
-    <div className="h-screen w-full bg-white">
+    <div className="relative h-screen w-full bg-white">
       {frameQuery && (
-        <iframe 
+        <iframe
           ref={iframeRef}
           onLoad={syncPrototypeUser}
-          title="GlobalCougar prototype" 
-          src={`/globalcougar.html?${frameQuery}`} 
+          title="GlobalCougar prototype"
+          src={`/globalcougar.html?${frameQuery}`}
           className="h-full w-full border-0 bg-white"
         />
       )}

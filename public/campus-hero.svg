@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" fill="none">
+  <!-- Original campus illustration for the unauthenticated welcome screen. -->
+  <defs>
+    <linearGradient id="sky" x1="600" y1="0" x2="600" y2="700" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#DDF1FA"/>
+      <stop offset="1" stop-color="#F7FAFC"/>
+    </linearGradient>
+    <linearGradient id="mountain" x1="600" y1="190" x2="600" y2="520" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#66869B"/>
+      <stop offset="1" stop-color="#274B67"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="700" rx="28" fill="url(#sky)"/>
+  <circle cx="970" cy="135" r="58" fill="#F2C86B"/>
+  <path d="M0 390 176 270l111 78 224-241 191 251 98-88 173 121v164H0V390Z" fill="url(#mountain)"/>
+  <path d="m440 205 71-98 77 103-45-18-32 21-34-22-37 14Z" fill="#F5FAFC"/>
+  <path d="M0 445c170-55 314-54 466 8 162 66 311 44 456-8 104-37 196-36 278-9v264H0V445Z" fill="#D9E7D2"/>
+  <path d="M0 538c181-71 342-68 499 0 171 74 342 66 510 4 72-27 137-35 191-27v185H0V538Z" fill="#7E9B71"/>
+  <path d="M307 404h586v168H307z" fill="#F8F5ED"/>
+  <path d="m271 414 329-142 329 142H271Z" fill="#B5C4CC"/>
+  <path d="M271 414h658v24H271z" fill="#E5E8E5"/>
+  <path d="M356 445h34v127h-34zM445 445h34v127h-34zM534 445h34v127h-34zM623 445h34v127h-34zM712 445h34v127h-34zM801 445h34v127h-34z" fill="#B7C7CF"/>
+  <path d="M575 477h50v95h-50z" fill="#32658A"/>
+  <path d="M0 572c208-49 399-44 592 14 219 66 419 55 608-12v126H0V572Z" fill="#E9E1D2"/>
+  <path d="M87 564c15-46 36-72 62-77 25 5 47 31 62 77H87Z" fill="#315B4B"/>
+  <path d="M103 565h92v12h-92z" fill="#74563D"/>
+  <path d="M978 555c13-41 32-64 55-69 24 5 43 28 56 69H978Z" fill="#315B4B"/>
+  <path d="M991 556h84v12h-84z" fill="#74563D"/>
+  <circle cx="507" cy="587" r="13" fill="#244761"/>
+  <path d="M492 624c1-22 6-34 15-34s14 12 15 34h-30Z" fill="#F2C86B"/>
+  <path d="m498 622-10 33M516 622l10 33" stroke="#244761" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="696" cy="595" r="12" fill="#613F34"/>
+  <path d="M682 630c1-20 6-31 14-31s13 11 14 31h-28Z" fill="#EAF4F8"/>
+  <path d="m687 629-9 27M711 629l9 27" stroke="#244761" stroke-width="8" stroke-linecap="round"/>
+</svg>

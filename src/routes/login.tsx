@@ -167,6 +167,7 @@ function AuthPage() {
       return;
     }
 
+    // Supabase persists the authenticated session for route guards and the app's sign-out flow.
     setLoading(true);
     if (isLogin) {
       const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
@@ -184,10 +185,10 @@ function AuthPage() {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-slate-50 font-sans">
-      {/* LEFT SIDE - Brand & Welcome */}
-      <div className="hidden md:flex md:w-1/2 p-12 flex-col justify-center bg-white border-r border-gray-100">
-        <div className="max-w-md mx-auto">
-          <div className="flex items-center gap-3 mb-16">
+      {/* Brand, welcome, and campus image stay visible on desktop and mobile. */}
+      <div className="flex w-full flex-col justify-center border-b border-gray-100 bg-white p-6 md:w-1/2 md:border-b-0 md:border-r md:p-12">
+        <div className="mx-auto w-full max-w-md">
+          <div className="mb-8 flex items-center gap-3 md:mb-12">
             <div className="bg-[#002255] text-white font-bold px-2 py-1 rounded text-sm tracking-wider">GC</div>
             <div>
               <div className="font-bold text-[#002255] leading-tight">GlobalCougar</div>
@@ -195,10 +196,15 @@ function AuthPage() {
             </div>
           </div>
           
-          <h1 className="text-6xl font-serif text-[#002255] mb-6">Welcome!</h1>
-          <p className="text-gray-600 text-lg mb-12 leading-relaxed">
+          <h1 className="mb-4 font-serif text-4xl text-[#002255] md:mb-6 md:text-6xl">Welcome!</h1>
+          <p className="mb-6 text-lg leading-relaxed text-gray-600 md:mb-8">
             A personalized home base for international students—from pre-arrival paperwork to your first semester in Provo.
           </p>
+          <img
+            src="/campus-hero.svg"
+            alt="Illustrated campus and students beneath Y Mountain"
+            className="aspect-[12/7] w-full rounded-xl border border-slate-200 object-cover shadow-md"
+          />
         </div>
       </div>
 
@@ -312,9 +318,12 @@ function AuthPage() {
             )}
 
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">Email</label>
+              <label htmlFor="user_email" className="block text-sm font-bold text-gray-700 mb-2">Email</label>
               <input
+                id="user_email"
+                name="user_email"
                 type="email"
+                required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@byu.edu"
@@ -323,9 +332,12 @@ function AuthPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">Password</label>
+              <label htmlFor="user_password" className="block text-sm font-bold text-gray-700 mb-2">Password</label>
               <input
+                id="user_password"
+                name="user_password"
                 type="password"
+                required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"

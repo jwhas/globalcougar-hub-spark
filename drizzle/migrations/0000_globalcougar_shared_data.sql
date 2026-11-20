@@ -53,10 +53,14 @@ CREATE TABLE public.forum_reply (
 );
 
 -- The Data API grants no default privileges on the public schema, so grant
--- exactly what the policies below allow.
-GRANT SELECT ON public.student, public.milestone, public.forum_thread, public.forum_reply TO anon, authenticated;
+-- only public student names to anon; authenticated maintenance uses RLS-backed CRUD.
+GRANT SELECT ON public.milestone, public.forum_thread, public.forum_reply TO anon, authenticated;
+GRANT SELECT (id, name) ON public.student TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.student TO authenticated;
 GRANT SELECT, INSERT, UPDATE ON public.user_milestone TO anon, authenticated;
-GRANT INSERT ON public.forum_thread, public.forum_reply TO anon, authenticated;
+GRANT INSERT ON public.forum_thread TO anon, authenticated;
+GRANT INSERT ON public.forum_reply TO anon, authenticated;
+GRANT UPDATE, DELETE ON public.forum_reply TO authenticated;
 GRANT ALL ON public.student, public.milestone, public.user_milestone, public.forum_thread, public.forum_reply TO service_role;
 
 ALTER TABLE public.student ENABLE ROW LEVEL SECURITY;
@@ -76,6 +80,12 @@ CREATE POLICY forum_thread_read ON public.forum_thread FOR SELECT TO anon, authe
 CREATE POLICY forum_thread_insert ON public.forum_thread FOR INSERT TO anon, authenticated WITH CHECK (true);
 CREATE POLICY forum_reply_read ON public.forum_reply FOR SELECT TO anon, authenticated USING (true);
 CREATE POLICY forum_reply_insert ON public.forum_reply FOR INSERT TO anon, authenticated WITH CHECK (true);
+-- Student records and forum replies are editable only with an authenticated session.
+CREATE POLICY student_insert_authenticated ON public.student FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY student_update_authenticated ON public.student FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY student_delete_authenticated ON public.student FOR DELETE TO authenticated USING (true);
+CREATE POLICY forum_reply_update_authenticated ON public.forum_reply FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY forum_reply_delete_authenticated ON public.forum_reply FOR DELETE TO authenticated USING (true);
 
 -- Seed data: the demo students already named in the prototype, the eight
 -- roadmap milestones, one finished checkpoint, and the starter discussions.

@@ -11,8 +11,11 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as MaintainRecordsRouteImport } from './routes/maintain-records'
+import { Route as MaintainUsersRouteImport } from './routes/maintain-users'
 import { Route as ApiPublicDiscussionsRouteImport } from './routes/api/public/discussions'
 import { Route as ApiPublicJourneyRouteImport } from './routes/api/public/journey'
+import { Route as ApiPublicUsersRouteImport } from './routes/api/public/users'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,6 +25,16 @@ const IndexRoute = IndexRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MaintainRecordsRoute = MaintainRecordsRouteImport.update({
+  id: '/maintain-records',
+  path: '/maintain-records',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MaintainUsersRoute = MaintainUsersRouteImport.update({
+  id: '/maintain-users',
+  path: '/maintain-users',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicDiscussionsRoute = ApiPublicDiscussionsRouteImport.update({
@@ -34,44 +47,78 @@ const ApiPublicJourneyRoute = ApiPublicJourneyRouteImport.update({
   path: '/api/public/journey',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicUsersRoute = ApiPublicUsersRouteImport.update({
+  id: '/api/public/users',
+  path: '/api/public/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/maintain-records': typeof MaintainRecordsRoute
+  '/maintain-users': typeof MaintainUsersRoute
   '/api/public/discussions': typeof ApiPublicDiscussionsRoute
   '/api/public/journey': typeof ApiPublicJourneyRoute
+  '/api/public/users': typeof ApiPublicUsersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/maintain-records': typeof MaintainRecordsRoute
+  '/maintain-users': typeof MaintainUsersRoute
   '/api/public/discussions': typeof ApiPublicDiscussionsRoute
   '/api/public/journey': typeof ApiPublicJourneyRoute
+  '/api/public/users': typeof ApiPublicUsersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/maintain-records': typeof MaintainRecordsRoute
+  '/maintain-users': typeof MaintainUsersRoute
   '/api/public/discussions': typeof ApiPublicDiscussionsRoute
   '/api/public/journey': typeof ApiPublicJourneyRoute
+  '/api/public/users': typeof ApiPublicUsersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/api/public/discussions' | '/api/public/journey'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/maintain-records'
+    | '/maintain-users'
+    | '/api/public/discussions'
+    | '/api/public/journey'
+    | '/api/public/users'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/api/public/discussions' | '/api/public/journey'
+  to:
+    | '/'
+    | '/login'
+    | '/maintain-records'
+    | '/maintain-users'
+    | '/api/public/discussions'
+    | '/api/public/journey'
+    | '/api/public/users'
   id:
     | '__root__'
     | '/'
     | '/login'
+    | '/maintain-records'
+    | '/maintain-users'
     | '/api/public/discussions'
     | '/api/public/journey'
+    | '/api/public/users'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
+  MaintainRecordsRoute: typeof MaintainRecordsRoute
+  MaintainUsersRoute: typeof MaintainUsersRoute
   ApiPublicDiscussionsRoute: typeof ApiPublicDiscussionsRoute
   ApiPublicJourneyRoute: typeof ApiPublicJourneyRoute
+  ApiPublicUsersRoute: typeof ApiPublicUsersRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -90,6 +137,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/maintain-records': {
+      id: '/maintain-records'
+      path: '/maintain-records'
+      fullPath: '/maintain-records'
+      preLoaderRoute: typeof MaintainRecordsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/maintain-users': {
+      id: '/maintain-users'
+      path: '/maintain-users'
+      fullPath: '/maintain-users'
+      preLoaderRoute: typeof MaintainUsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/discussions': {
       id: '/api/public/discussions'
       path: '/api/public/discussions'
@@ -104,14 +165,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicJourneyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/users': {
+      id: '/api/public/users'
+      path: '/api/public/users'
+      fullPath: '/api/public/users'
+      preLoaderRoute: typeof ApiPublicUsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
+  MaintainRecordsRoute: MaintainRecordsRoute,
+  MaintainUsersRoute: MaintainUsersRoute,
   ApiPublicDiscussionsRoute: ApiPublicDiscussionsRoute,
   ApiPublicJourneyRoute: ApiPublicJourneyRoute,
+  ApiPublicUsersRoute: ApiPublicUsersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

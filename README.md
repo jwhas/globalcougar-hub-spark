@@ -46,6 +46,15 @@ npm run dev
 
 5. Open http://localhost:8080 in your browser.
 
+### Applying database migrations
+
+The authenticated user and forum-reply maintenance pages require the SQL
+policies in `drizzle/migrations/0003_authenticated_maintenance_crud.sql`.
+Set `LOVABLE_DB_MIGRATION_URL` to the Supabase PostgreSQL connection string
+locally (never commit it), then run `npx drizzle-kit migrate`. The migration
+keeps anonymous access limited to public discussion reads/posts; only signed-in
+users receive student and forum-reply update/delete permissions.
+
 ### GlobalCougar AI Assistant (OpenRouter)
 
 The chatbot calls the `globalcougar-chat` Supabase Edge Function. The browser
