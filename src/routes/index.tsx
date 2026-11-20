@@ -94,18 +94,18 @@ function Index() {
     const handlePrototypeMessage = (event: MessageEvent) => {
       if (
         event.origin !== window.location.origin ||
-        event.source !== iframeRef.current?.contentWindow ||
-        event.data?.type !== 'gc-logout'
+        event.source !== iframeRef.current?.contentWindow
       ) {
         return;
       }
 
-      void handleLogout();
+      if (event.data?.type === 'gc-logout') void handleLogout();
+      if (event.data?.type === 'gc-request-user') void syncPrototypeUser();
     };
 
     window.addEventListener('message', handlePrototypeMessage);
     return () => window.removeEventListener('message', handlePrototypeMessage);
-  }, [handleLogout]);
+  }, [handleLogout, syncPrototypeUser]);
 
   return (
     <div className="h-screen w-full bg-white">

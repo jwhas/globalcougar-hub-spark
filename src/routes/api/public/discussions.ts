@@ -21,18 +21,14 @@ type Thread = Reply extends never ? never : {
 
 type RawThread = {
   id: number
+  student_id: number
   title: string
   body: string
   topic: string
   created_at: string
-  student: { name: string } | null
-  forum_reply: Array<{
-    id: number
-    body: string
-    created_at: string
-    student: { name: string } | null
-  }> | null
 }
+
+type RawReply = { id: number; thread_id: number; student_id: number; body: string; created_at: string }
 
 function sameOrigin(request: Request): boolean {
   const host = new URL(request.url).host
@@ -82,25 +78,50 @@ export const Route = createFileRoute('/api/public/discussions')({
           },
         })
 
-        const { data, error } = await supabase
+        const { data: threadRows, error: threadError } = await supabase
           .from('forum_thread')
-          .select('id, title, body, topic, created_at, student(name), forum_reply(id, body, created_at, student(name))')
+          .select('id, student_id, title, body, topic, created_at')
           .order('created_at', { ascending: false })
           .limit(60)
 
-        if (error) return fail('The board could not be loaded.', 502)
+        if (threadError) {
+          console.error('Discussion threads could not be loaded:', threadError.message)
+          return fail('The board could not be loaded.', 502)
+        }
 
-        const threads: Thread[] = ((data ?? []) as unknown as RawThread[]).map((row) => ({
+        const rawThreads = (threadRows ?? []) as RawThread[]
+        const threadIds = rawThreads.map(row => row.id)
+        const { data: replyRows, error: replyError } = threadIds.length
+          ? await supabase.from('forum_reply').select('id, thread_id, student_id, body, created_at').in('thread_id', threadIds)
+          : { data: [], error: null }
+        if (replyError) {
+          console.error('Discussion replies could not be loaded:', replyError.message)
+          return fail('The board replies could not be loaded.', 502)
+        }
+
+        const rawReplies = (replyRows ?? []) as RawReply[]
+        const studentIds = [...new Set([...rawThreads.map(row => row.student_id), ...rawReplies.map(row => row.student_id)])]
+        const { data: studentRows, error: studentsError } = studentIds.length
+          ? await supabase.from('student').select('id, name').in('id', studentIds)
+          : { data: [], error: null }
+        if (studentsError) {
+          console.error('Discussion authors could not be loaded:', studentsError.message)
+          return fail('The board authors could not be loaded.', 502)
+        }
+        const authorById = new Map((studentRows ?? []).map(row => [row.id, row.name]))
+
+        const threads: Thread[] = rawThreads.map((row) => ({
           id: row.id,
           title: row.title,
           body: row.body,
           topic: row.topic,
-          author: row.student?.name ?? 'Student',
+          author: authorById.get(row.student_id) ?? 'Student',
           at: Date.parse(row.created_at),
-          replies: (row.forum_reply ?? [])
+          replies: rawReplies
+            .filter(reply => reply.thread_id === row.id)
             .map((r) => ({
               id: r.id,
-              author: r.student?.name ?? 'Student',
+              author: authorById.get(r.student_id) ?? 'Student',
               body: r.body,
               at: Date.parse(r.created_at),
             }))
@@ -146,12 +167,23 @@ export const Route = createFileRoute('/api/public/discussions')({
         })
 
         // Posts belong to the demo student until real accounts exist.
-        const { data: student, error: studentError } = await supabase
+        let { data: student, error: studentError } = await supabase
           .from('student')
-          .select('id')
+          .select('id, name')
           .eq('name', DEMO_STUDENT)
           .maybeSingle()
+        if (!student && !studentError) {
+          const fallback = await supabase
+            .from('student')
+            .select('id, name')
+            .order('id', { ascending: true })
+            .limit(1)
+            .maybeSingle()
+          student = fallback.data
+          studentError = fallback.error
+        }
         if (studentError || !student) return fail('The board is not ready yet.', 503)
+        const demoAuthor = student.name || DEMO_STUDENT
 
         if (action === 'thread') {
           const title = clean(input['title'], 140)
@@ -164,11 +196,11 @@ export const Route = createFileRoute('/api/public/discussions')({
           const { data: thread, error } = await supabase
             .from('forum_thread')
             .insert({ student_id: student.id, title, body, topic })
-            .select('id, title, body, topic, created_at, student(name)')
+            .select('id, student_id, title, body, topic, created_at')
             .single()
           if (error || !thread) return fail('Your post could not be saved.', 502)
 
-          const row = thread as unknown as RawThread
+          const row = thread as RawThread
           return Response.json({
             ok: true,
             thread: {
@@ -176,7 +208,7 @@ export const Route = createFileRoute('/api/public/discussions')({
               title: row.title,
               body: row.body,
               topic: row.topic,
-              author: row.student?.name ?? DEMO_STUDENT,
+              author: demoAuthor,
               at: Date.parse(row.created_at),
               replies: [],
             },
@@ -199,21 +231,16 @@ export const Route = createFileRoute('/api/public/discussions')({
           const { data: reply, error } = await supabase
             .from('forum_reply')
             .insert({ thread_id: threadId, student_id: student.id, body })
-            .select('id, body, created_at, student(name)')
+            .select('id, thread_id, student_id, body, created_at')
             .single()
           if (error || !reply) return fail('Your reply could not be saved.', 502)
 
-          const row = reply as unknown as {
-            id: number
-            body: string
-            created_at: string
-            student: { name: string } | null
-          }
+          const row = reply as RawReply
           return Response.json({
             ok: true,
             reply: {
               id: row.id,
-              author: row.student?.name ?? DEMO_STUDENT,
+              author: demoAuthor,
               body: row.body,
               at: Date.parse(row.created_at),
             },

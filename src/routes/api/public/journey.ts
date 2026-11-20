@@ -113,7 +113,12 @@ export const Route = createFileRoute('/api/public/journey')({
         return json({ ok: true })
       } catch (error) {
         console.error('Journey task save failed', error instanceof Error ? error.message : error)
-        return json({ ok: false, error: error instanceof z.ZodError || error instanceof SyntaxError ? 'The task details are invalid.' : 'Could not save the personal task.' }, error instanceof z.ZodError || error instanceof SyntaxError ? 400 : 503)
+        const invalid = error instanceof z.ZodError || error instanceof SyntaxError
+        const unauthorized = error instanceof Error && error.message === 'Unauthorized'
+        return json(
+          { ok: false, error: invalid ? 'The task details are invalid.' : unauthorized ? 'Your session expired. Please sign in again.' : 'Could not save the personal task.' },
+          invalid ? 400 : unauthorized ? 401 : 503,
+        )
       }
     },
   } },
