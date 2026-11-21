@@ -29,6 +29,13 @@
       "when": 1794936631671,
       "tag": "0003_authenticated_maintenance_crud",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795215600000,
+      "tag": "0004_repair_discussion_board",
+      "breakpoints": true
     }
   ]
 }

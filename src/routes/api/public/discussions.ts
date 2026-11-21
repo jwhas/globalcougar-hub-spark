@@ -136,6 +136,10 @@ export const Route = createFileRoute('/api/public/discussions')({
       POST: async ({ request }) => {
         if (!sameOrigin(request)) return fail('Only this site can post to the board.', 403)
 
+        const authorization = request.headers.get('authorization')
+        if (!authorization?.startsWith('Bearer ')) return fail('Sign in before posting.', 401)
+        const accessToken = authorization.slice('Bearer '.length)
+
         let payload: unknown
         try {
           payload = await request.json()
@@ -161,10 +165,14 @@ export const Route = createFileRoute('/api/public/discussions')({
                 headers.delete('Authorization')
               }
               headers.set('apikey', key)
+              headers.set('Authorization', `Bearer ${accessToken}`)
               return fetch(input2, { ...init, headers })
             },
           },
         })
+
+        const { data: authData, error: authError } = await supabase.auth.getUser(accessToken)
+        if (authError || !authData.user) return fail('Your session expired. Please sign in again.', 401)
 
         // Posts belong to the demo student until real accounts exist.
         let { data: student, error: studentError } = await supabase
