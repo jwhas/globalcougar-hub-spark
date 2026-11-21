@@ -2,9 +2,8 @@ import { createFileRoute } from '@tanstack/react-router'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/integrations/supabase/types'
 
-// Public board for the prototype: no sign-in exists yet, so the anonymous
-// role reads and writes it. Every caller is still checked here: same-origin
-// only, and every field validated and length-capped before it reaches SQL.
+// Everyone can read the class-demo board; writing requires a current account
+// session. Every field is validated and length-capped before it reaches SQL.
 const DEMO_STUDENT = 'James A.'
 const TOPICS = ['Careers', 'Work', 'Scholarships', 'Money & Aid', 'Campus Life']
 
@@ -22,13 +21,14 @@ type Thread = Reply extends never ? never : {
 type RawThread = {
   id: number
   student_id: number
+  author_name: string
   title: string
   body: string
   topic: string
   created_at: string
 }
 
-type RawReply = { id: number; thread_id: number; student_id: number; body: string; created_at: string }
+type RawReply = { id: number; thread_id: number; student_id: number; author_name: string; body: string; created_at: string }
 
 function sameOrigin(request: Request): boolean {
   const host = new URL(request.url).host
@@ -80,7 +80,7 @@ export const Route = createFileRoute('/api/public/discussions')({
 
         const { data: threadRows, error: threadError } = await supabase
           .from('forum_thread')
-          .select('id, student_id, title, body, topic, created_at')
+          .select('id, student_id, author_name, title, body, topic, created_at')
           .order('created_at', { ascending: false })
           .limit(60)
 
@@ -92,7 +92,7 @@ export const Route = createFileRoute('/api/public/discussions')({
         const rawThreads = (threadRows ?? []) as RawThread[]
         const threadIds = rawThreads.map(row => row.id)
         const { data: replyRows, error: replyError } = threadIds.length
-          ? await supabase.from('forum_reply').select('id, thread_id, student_id, body, created_at').in('thread_id', threadIds)
+          ? await supabase.from('forum_reply').select('id, thread_id, student_id, author_name, body, created_at').in('thread_id', threadIds)
           : { data: [], error: null }
         if (replyError) {
           console.error('Discussion replies could not be loaded:', replyError.message)
@@ -100,28 +100,18 @@ export const Route = createFileRoute('/api/public/discussions')({
         }
 
         const rawReplies = (replyRows ?? []) as RawReply[]
-        const studentIds = [...new Set([...rawThreads.map(row => row.student_id), ...rawReplies.map(row => row.student_id)])]
-        const { data: studentRows, error: studentsError } = studentIds.length
-          ? await supabase.from('student').select('id, name').in('id', studentIds)
-          : { data: [], error: null }
-        if (studentsError) {
-          console.error('Discussion authors could not be loaded:', studentsError.message)
-          return fail('The board authors could not be loaded.', 502)
-        }
-        const authorById = new Map((studentRows ?? []).map(row => [row.id, row.name]))
-
         const threads: Thread[] = rawThreads.map((row) => ({
           id: row.id,
           title: row.title,
           body: row.body,
           topic: row.topic,
-          author: authorById.get(row.student_id) ?? 'Student',
+          author: row.author_name || 'Student',
           at: Date.parse(row.created_at),
           replies: rawReplies
             .filter(reply => reply.thread_id === row.id)
             .map((r) => ({
               id: r.id,
-              author: authorById.get(r.student_id) ?? 'Student',
+              author: r.author_name || 'Student',
               body: r.body,
               at: Date.parse(r.created_at),
             }))
@@ -173,8 +163,12 @@ export const Route = createFileRoute('/api/public/discussions')({
 
         const { data: authData, error: authError } = await supabase.auth.getUser(accessToken)
         if (authError || !authData.user) return fail('Your session expired. Please sign in again.', 401)
+        const accountAuthor = clean(authData.user.user_metadata?.['full_name'], 100)
+          || clean(authData.user.email?.split('@')[0], 100)
+          || 'Student'
 
-        // Posts belong to the demo student until real accounts exist.
+        // Keep the legacy student foreign key for compatibility; author_name
+        // comes from the verified Supabase account above.
         let { data: student, error: studentError } = await supabase
           .from('student')
           .select('id, name')
@@ -191,8 +185,6 @@ export const Route = createFileRoute('/api/public/discussions')({
           studentError = fallback.error
         }
         if (studentError || !student) return fail('The board is not ready yet.', 503)
-        const demoAuthor = student.name || DEMO_STUDENT
-
         if (action === 'thread') {
           const title = clean(input['title'], 140)
           const body = clean(input['body'], 2000)
@@ -203,8 +195,8 @@ export const Route = createFileRoute('/api/public/discussions')({
 
           const { data: thread, error } = await supabase
             .from('forum_thread')
-            .insert({ student_id: student.id, title, body, topic })
-            .select('id, student_id, title, body, topic, created_at')
+            .insert({ student_id: student.id, author_name: accountAuthor, title, body, topic })
+            .select('id, student_id, author_name, title, body, topic, created_at')
             .single()
           if (error || !thread) return fail('Your post could not be saved.', 502)
 
@@ -216,7 +208,7 @@ export const Route = createFileRoute('/api/public/discussions')({
               title: row.title,
               body: row.body,
               topic: row.topic,
-              author: demoAuthor,
+              author: row.author_name,
               at: Date.parse(row.created_at),
               replies: [],
             },
@@ -238,8 +230,8 @@ export const Route = createFileRoute('/api/public/discussions')({
 
           const { data: reply, error } = await supabase
             .from('forum_reply')
-            .insert({ thread_id: threadId, student_id: student.id, body })
-            .select('id, thread_id, student_id, body, created_at')
+            .insert({ thread_id: threadId, student_id: student.id, author_name: accountAuthor, body })
+            .select('id, thread_id, student_id, author_name, body, created_at')
             .single()
           if (error || !reply) return fail('Your reply could not be saved.', 502)
 
@@ -248,7 +240,7 @@ export const Route = createFileRoute('/api/public/discussions')({
             ok: true,
             reply: {
               id: row.id,
-              author: demoAuthor,
+              author: row.author_name,
               body: row.body,
               at: Date.parse(row.created_at),
             },

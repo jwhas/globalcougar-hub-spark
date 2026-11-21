@@ -36,6 +36,13 @@
       "when": 1795215600000,
       "tag": "0004_repair_discussion_board",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1795227600000,
+      "tag": "0005_discussion_account_names",
+      "breakpoints": true
     }
   ]
 }

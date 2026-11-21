@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       forum_reply: {
         Row: {
+          author_name: string
           body: string
           created_at: string
           id: number
@@ -23,6 +24,7 @@ export type Database = {
           thread_id: number
         }
         Insert: {
+          author_name?: string
           body: string
           created_at?: string
           id?: never
@@ -30,6 +32,7 @@ export type Database = {
           thread_id: number
         }
         Update: {
+          author_name?: string
           body?: string
           created_at?: string
           id?: never
@@ -55,6 +58,7 @@ export type Database = {
       }
       forum_thread: {
         Row: {
+          author_name: string
           body: string
           created_at: string
           id: number
@@ -63,6 +67,7 @@ export type Database = {
           topic: string
         }
         Insert: {
+          author_name?: string
           body?: string
           created_at?: string
           id?: never
@@ -71,6 +76,7 @@ export type Database = {
           topic?: string
         }
         Update: {
+          author_name?: string
           body?: string
           created_at?: string
           id?: never
